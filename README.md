@@ -4,7 +4,7 @@
 
 ## User friendly [Online Wallet](http://wallet.prizm.space/)
 
-## NXT based (only for professionals) [Technical Wallet](http://tech.prizm.space/)
+## Special (only for professionals) [Technical Wallet](http://tech.prizm.space/)
 
 ## Fully functional [PrizmCore build with technical interface](http://tech.prizm.space/prizm-dist.tgz)
 
