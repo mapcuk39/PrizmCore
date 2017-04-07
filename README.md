@@ -10,4 +10,6 @@
 
 ## Easy API gateway [PrizmAPIServlet](http://tech.prizm.space/prizmAPI.tgz)
 
+## Windows installer [PrizmSetup.exe](http://tech.prizm.space/PrizmSetup.exe)
+
 Attention! We don't include PrizmEngine.java in current repository for security reasons and for preventing creating forks by anyone. This file will be published later.
