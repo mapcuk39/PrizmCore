@@ -12,4 +12,6 @@
 
 ## Windows installer [PrizmSetup.exe](http://tech.prizm.space/PrizmSetup.exe)
 
+## Blockchain explorer [BlockChain.PRIZM.SPACE](http://blockchain.prizm.space/)
+
 Attention! We don't include PrizmEngine.java in current repository for security reasons and for preventing creating forks by anyone. This file will be published later.
