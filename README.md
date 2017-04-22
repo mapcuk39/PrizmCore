@@ -2,7 +2,7 @@
 
 ## This is [Android Application](http://tech.prizm-space.com/prizm.apk)
 
-## User friendly [Online Wallet](http://wallet.prizm-space.com/)
+## User friendly [Online Wallet (http)](http://wallet.prizm-space.com/) / [Online Wallet (https)](https://wallet.prizm.space/)
 
 ## Special (only for professionals) [Technical Wallet](http://tech.prizm-space.com/)
 
