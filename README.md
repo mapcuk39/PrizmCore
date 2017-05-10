@@ -6,11 +6,11 @@
 
 ## Special (only for professionals) [Technical Wallet](http://tech.prizm-space.com/)
 
-## Fully functional [PrizmCore build with technical interface](http://tech.prizm.space/prizm-dist.tgz)
+## Fully functional (NEW VERSION) [PrizmCore build with technical interface](http://tech.prizm.space/prizm-dist.tgz)
 
 ## Easy API gateway [PrizmAPIServlet](http://tech.prizm.space/prizmAPI.tgz)
 
-## Windows installer [PrizmSetup.exe](http://tech.prizm.space/PrizmSetup.exe)
+## Windows installer (NEW VERSION) [PrizmSetup.exe](http://tech.prizm.space/PrizmSetup.exe)
 
 ## Blockchain explorer [BlockChain.PRIZM.SPACE](http://blockchain.prizm.space/)
 
