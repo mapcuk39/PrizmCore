@@ -10,7 +10,7 @@
 
 ## Easy API gateway [PrizmAPIServlet](http://tech.prizm.space/prizmAPI.tgz)
 
-## Windows installer (NEW VERSION) [PrizmSetup-1.9.6.exe](http://tech.prizm.space/PrizmSetup-1.9.6.exe)
+## Windows installer (NEW VERSION) [PrizmSetup-1.9.7.exe](http://tech.prizm.space/PrizmSetup-1.9.7.exe)
 
 ## Blockchain explorer [BlockChain.PRIZM.SPACE](http://blockchain.prizm.space/)
 
