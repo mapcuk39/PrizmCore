@@ -225,9 +225,6 @@ final class TransactionDb {
             if (rs.getBoolean("has_encrypttoself_message")) {
                 builder.appendix(new Appendix.EncryptToSelfMessage(buffer, version));
             }
-            if (rs.getBoolean("phased")) {
-                builder.appendix(new Appendix.Phasing(buffer, version));
-            }
             if (rs.getBoolean("has_prunable_message")) {
                 builder.appendix(new Appendix.PrunablePlainMessage(buffer, version));
             }
@@ -351,7 +348,7 @@ final class TransactionDb {
                     pstmt.setBoolean(++i, transaction.getEncryptedMessage() != null);
                     pstmt.setBoolean(++i, transaction.getPublicKeyAnnouncement() != null);
                     pstmt.setBoolean(++i, transaction.getEncryptToSelfMessage() != null);
-                    pstmt.setBoolean(++i, transaction.getPhasing() != null);
+                    pstmt.setBoolean(++i, false);
                     pstmt.setBoolean(++i, transaction.hasPrunablePlainMessage());
                     pstmt.setBoolean(++i, transaction.hasPrunableEncryptedMessage());
                     pstmt.setBoolean(++i, transaction.getAttachment() instanceof Appendix.Prunable);

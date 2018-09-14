@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.env;
 
 import java.lang.reflect.InvocationTargetException;
@@ -27,13 +26,14 @@ public class RuntimeEnvironment {
     private static final String osname = System.getProperty("os.name").toLowerCase();
     private static final boolean isHeadless;
     private static final boolean hasJavaFX;
+
     static {
         boolean b;
         try {
             // Load by reflection to prevent exception in case java.awt does not exist
             Class graphicsEnvironmentClass = Class.forName("java.awt.GraphicsEnvironment");
             Method isHeadlessMethod = graphicsEnvironmentClass.getMethod("isHeadless");
-            b = (Boolean)isHeadlessMethod.invoke(null);
+            b = (Boolean) isHeadlessMethod.invoke(null);
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             b = true;
         }
@@ -91,7 +91,7 @@ public class RuntimeEnvironment {
         String dirProvider = System.getProperty(DIRPROVIDER_ARG);
         if (dirProvider != null) {
             try {
-                return (DirProvider)Class.forName(dirProvider).newInstance();
+                return (DirProvider) Class.forName(dirProvider).newInstance();
             } catch (ReflectiveOperationException e) {
                 System.out.println("Failed to instantiate dirProvider " + dirProvider);
                 throw new RuntimeException(e.getMessage(), e);

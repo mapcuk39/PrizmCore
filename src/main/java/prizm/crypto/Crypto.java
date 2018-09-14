@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.crypto;
 
 import prizm.Prizm;
@@ -53,7 +52,8 @@ public final class Crypto {
         }
     };
 
-    private Crypto() {} //never
+    private Crypto() {
+    } //never
 
     public static SecureRandom getSecureRandom() {
         return secureRandom.get();
@@ -293,7 +293,7 @@ public final class Crypto {
         rsString = rsString.toUpperCase();
         try {
             long id = ReedSolomon.decode(rsString);
-            if (! rsString.equals(ReedSolomon.encode(id))) {
+            if (!rsString.equals(ReedSolomon.encode(id))) {
                 throw new RuntimeException("ERROR: Reed-Solomon decoding of " + rsString
                         + " not reversible, decoded to " + id);
             }

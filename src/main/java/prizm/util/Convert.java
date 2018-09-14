@@ -206,6 +206,8 @@ public final class Convert {
     }
 
     public static byte[] toBytes(String s) {
+//sss
+//    if(s==null)s="";
         try {
             return s.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
@@ -238,8 +240,9 @@ public final class Convert {
     }
 
     public static String readString(ByteBuffer buffer, int numBytes, int maxLength) throws PrizmException.NotValidException {
+        if (buffer == null || numBytes <= 0 || maxLength <= 0) return "";
         if (numBytes > 3 * maxLength) {
-            throw new PrizmException.NotValidException("Max parameter length exceeded");
+            throw new PrizmException.NotValidException("Max parameter length exceeded: "+numBytes+" / "+maxLength);
         }
         byte[] bytes = new byte[numBytes];
         buffer.get(bytes);

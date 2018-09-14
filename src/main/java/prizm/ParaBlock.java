@@ -214,6 +214,7 @@ public class ParaBlock implements Serializable {
     private int height = 0;
     private int stamp = 0;
     private long generatorID = 0;
+    private boolean noTransactions = false;
     
     private final List<Transaction> transactions = new ArrayList<Transaction>();
 
@@ -259,5 +260,13 @@ public class ParaBlock implements Serializable {
 
     public List<Transaction> getTransactions() {
         return transactions;
+    }
+
+    public boolean hasNoTransactions() {
+        return noTransactions;
+    }
+
+    public void setNoTransactions(boolean noTransactions) {
+        this.noTransactions = noTransactions;
     }
 }

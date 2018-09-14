@@ -62,7 +62,6 @@ public class ParaMetrics implements Serializable {
     }
 
     public long getPayout() {
-        System.out.println("Payout: "+payout);
         return payout;
     }
 

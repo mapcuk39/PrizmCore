@@ -5,10 +5,6 @@
  */
 package prizm;
 
-/**
- *
- * @author zoi
- */
 public class HeapStore {
     private long basic;
     private long connected;

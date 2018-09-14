@@ -18,7 +18,10 @@ package prizm.http;
 
 import prizm.Db;
 import prizm.util.Convert;
+import prizm.util.JSON;
 import org.h2.tools.Shell;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -101,8 +104,6 @@ public final class DbShellServlet extends HttpServlet {
     private static final String passwordForm = String.format(passwordFormTemplate, 
             "<p>This page is password-protected. Please enter the administrator's password</p>");
 
-    private static final String passwordFormWrongPassword = String.format(passwordFormTemplate, 
-            "<p style=\"color:red\">The provided password does not match the value of prizm.adminPassword. Please try again!</p>");
 
     
     @Override
@@ -148,13 +149,14 @@ public final class DbShellServlet extends HttpServlet {
             if (API.adminPassword.isEmpty()) {
                 body = errorNoPasswordIsConfigured;
             } else {
-                String adminPassword = req.getParameter("adminPassword");
-                if (API.adminPassword.equals(adminPassword)) {
+                try {
+                    API.verifyPassword(req);
                     if ("true".equals(req.getParameter("showShell"))) {
-                        body = form.replace("{adminPassword}", URLEncoder.encode(adminPassword, "UTF-8") );
+                        body = form.replace("{adminPassword}", URLEncoder.encode(req.getParameter("adminPassword"), "UTF-8") );
                     }
-                } else {
-                    body = passwordFormWrongPassword;
+                } catch (ParameterException exc) {
+                    String desc = (String)((JSONObject)JSONValue.parse(JSON.toString(exc.getErrorResponse()))).get("errorDescription");
+                    body = String.format(passwordFormTemplate, "<p style=\"color:red\">" + desc + "</p>");
                 }
             }
         }

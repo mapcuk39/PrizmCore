@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.tools;
 
 import prizm.Prizm;
@@ -59,7 +58,7 @@ public final class SignTransactionJSON {
                 System.exit(1);
             }
             try (BufferedReader reader = new BufferedReader(new FileReader(unsigned));
-                 BufferedWriter writer = new BufferedWriter(new FileWriter(signed))) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(signed))) {
                 JSONObject json = (JSONObject) JSONValue.parseWithException(reader);
                 byte[] publicKeyHash = Crypto.sha256().digest(Convert.parseHexString((String) json.get("senderPublicKey")));
                 String senderRS = Convert.rsAccount(Convert.fullHashToId(publicKeyHash));

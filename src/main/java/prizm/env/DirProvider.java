@@ -32,4 +32,6 @@ public interface DirProvider {
     File getConfDir();
 
     String getUserHomeDir();
+
+    boolean startNativeModule(String moduleName, String arguments);
 }

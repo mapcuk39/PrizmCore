@@ -17,15 +17,9 @@
 package prizm.http;
 
 import prizm.Constants;
-import prizm.CurrencyMinting;
-import prizm.CurrencyType;
 import prizm.Genesis;
 import prizm.HoldingType;
-import prizm.PhasingPoll;
-import prizm.Shuffling;
-import prizm.ShufflingParticipant;
 import prizm.TransactionType;
-import prizm.VoteWeighting;
 import prizm.crypto.HashFunction;
 import prizm.peer.Peer;
 import prizm.util.JSON;
@@ -33,6 +27,7 @@ import prizm.util.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONStreamAware;
+import prizm.util.PrizmTree;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Collections;
@@ -88,50 +83,17 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
                 response.put("transactionTypes", transactionJSON);
                 response.put("transactionSubTypes", transactionSubTypesJSON);
 
-                JSONObject currencyTypes = new JSONObject();
-                for (CurrencyType currencyType : CurrencyType.values()) {
-                    currencyTypes.put(currencyType.toString(), currencyType.getCode());
-                }
-                response.put("currencyTypes", currencyTypes);
-
-                JSONObject votingModels = new JSONObject();
-                for (VoteWeighting.VotingModel votingModel : VoteWeighting.VotingModel.values()) {
-                    votingModels.put(votingModel.toString(), votingModel.getCode());
-                }
-                response.put("votingModels", votingModels);
-
-                JSONObject minBalanceModels = new JSONObject();
-                for (VoteWeighting.MinBalanceModel minBalanceModel : VoteWeighting.MinBalanceModel.values()) {
-                    minBalanceModels.put(minBalanceModel.toString(), minBalanceModel.getCode());
-                }
-                response.put("minBalanceModels", minBalanceModels);
-
                 JSONObject hashFunctions = new JSONObject();
                 for (HashFunction hashFunction : HashFunction.values()) {
                     hashFunctions.put(hashFunction.toString(), hashFunction.getId());
                 }
                 response.put("hashAlgorithms", hashFunctions);
 
-                JSONObject phasingHashFunctions = new JSONObject();
-                for (HashFunction hashFunction : PhasingPoll.acceptedHashFunctions) {
-                    phasingHashFunctions.put(hashFunction.toString(), hashFunction.getId());
-                }
-                response.put("phasingHashAlgorithms", phasingHashFunctions);
-
-                response.put("maxPhasingDuration", Constants.MAX_PHASING_DURATION);
-
-                JSONObject mintingHashFunctions = new JSONObject();
-                for (HashFunction hashFunction : CurrencyMinting.acceptedHashFunctions) {
-                    mintingHashFunctions.put(hashFunction.toString(), hashFunction.getId());
-                }
-                response.put("mintingHashAlgorithms", mintingHashFunctions);
-
                 JSONObject peerStates = new JSONObject();
                 for (Peer.State peerState : Peer.State.values()) {
                     peerStates.put(peerState.toString(), peerState.ordinal());
                 }
                 response.put("peerStates", peerStates);
-                response.put("maxTaggedDataDataLength", Constants.MAX_TAGGED_DATA_DATA_LENGTH);
 
                 JSONObject requestTypes = new JSONObject();
                 for (Map.Entry<String, APIServlet.APIRequestHandler> handlerEntry : APIServlet.apiRequestHandlers.entrySet()) {
@@ -152,18 +114,6 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
                 }
                 response.put("holdingTypes", holdingTypes);
 
-                JSONObject shufflingStages = new JSONObject();
-                for (Shuffling.Stage stage : Shuffling.Stage.values()) {
-                    shufflingStages.put(stage.toString(), stage.getCode());
-                }
-                response.put("shufflingStages", shufflingStages);
-
-                JSONObject shufflingParticipantStates = new JSONObject();
-                for (ShufflingParticipant.State state : ShufflingParticipant.State.values()) {
-                    shufflingParticipantStates.put(state.toString(), state.getCode());
-                }
-                response.put("shufflingParticipantStates", shufflingParticipantStates);
-
                 JSONObject apiTags = new JSONObject();
                 for (APITag apiTag : APITag.values()) {
                     JSONObject tagJSON = new JSONObject();
@@ -180,6 +130,10 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
                 JSONArray disabledAPITags = new JSONArray();
                 API.disabledAPITags.forEach(apiTag -> disabledAPITags.add(apiTag.getDisplayName()));
                 response.put("disabledAPITags", disabledAPITags);
+
+                JSONArray notForwardedRequests = new JSONArray();
+                notForwardedRequests.addAll(APIProxy.NOT_FORWARDED_REQUESTS);
+                response.put("proxyNotForwardedRequests", notForwardedRequests);
 
                 CONSTANTS = JSON.prepare(response);
             } catch (Exception e) {
@@ -208,4 +162,7 @@ public final class GetConstants extends APIServlet.APIRequestHandler {
         return false;
     }
 
+    public static JSONStreamAware getConstants() {
+        return Holder.CONSTANTS;
+    }
 }

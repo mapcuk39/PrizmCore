@@ -24,10 +24,11 @@ public final class Db {
     public static final String PREFIX = Constants.isTestnet ? "prizm.testDb" : "prizm.db";
     public static final String PREFIX_PARA = Constants.isTestnet ? "prizm.testDbPara" : "prizm.dbPara";
     
-    public static final String PARA_DB_URL = Prizm.getStringProperty(PREFIX_PARA + "Url");
+//    public static final String PARA_DB_URL = Prizm.getStringProperty(PREFIX_PARA + "Url");
+    public static final String PARA_DB_URL = String.format("jdbc:%s:%s;%s", "h2", Prizm.getDbDir("./prizm_db/paraprizm"), "DB_CLOSE_ON_EXIT=FALSE;MVCC=TRUE;MV_STORE=FALSE");
     public static final String PARA_DB_USERNAME = Prizm.getStringProperty(PREFIX_PARA + "Username");
     public static final String PARA_DB_PASSWORD = Prizm.getStringProperty(PREFIX_PARA + "Password");
-    public static final String PARA_DB_PARAMS = Prizm.getStringProperty(PREFIX_PARA + "Params");
+//    public static final String PARA_DB_PARAMS = Prizm.getStringProperty(PREFIX_PARA + "Params");
     
     public static final TransactionalDb db = new TransactionalDb(new BasicDb.DbProperties()
             .maxCacheSize(Prizm.getIntProperty("prizm.dbCacheKB"))
@@ -40,9 +41,10 @@ public final class Db {
             .maxConnections(Prizm.getIntProperty("prizm.maxDbConnections"))
             .loginTimeout(Prizm.getIntProperty("prizm.dbLoginTimeout"))
             .defaultLockTimeout(Prizm.getIntProperty("prizm.dbDefaultLockTimeout") * 1000)
+            .maxMemoryRows(Prizm.getIntProperty("prizm.dbMaxMemoryRows"))
     );
 
-    static void init() {
+    public static void init() {
         db.init(new PrizmDbVersion());
     }
 

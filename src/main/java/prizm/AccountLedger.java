@@ -388,7 +388,6 @@ public class AccountLedger {
     public enum LedgerEvent {
         // Block and Transaction
             BLOCK_GENERATED(1, false),
-            REJECT_PHASED_TRANSACTION(2, true),
             TRANSACTION_FEE(50, true),
         // TYPE_PAYMENT
             ORDINARY_PAYMENT(3, true),
@@ -398,60 +397,7 @@ public class AccountLedger {
             ALIAS_BUY(6, true),
             ALIAS_DELETE(7, true),
             ALIAS_SELL(8, true),
-            ARBITRARY_MESSAGE(9, true),
-            HUB_ANNOUNCEMENT(10, true),
-            PHASING_VOTE_CASTING(11, true),
-            POLL_CREATION(12, true),
-            VOTE_CASTING(13, true),
-            ACCOUNT_PROPERTY(56, true),
-            ACCOUNT_PROPERTY_DELETE(57, true),
-        // TYPE_COLORED_COINS
-            ASSET_ASK_ORDER_CANCELLATION(14, true),
-            ASSET_ASK_ORDER_PLACEMENT(15, true),
-            ASSET_BID_ORDER_CANCELLATION(16, true),
-            ASSET_BID_ORDER_PLACEMENT(17, true),
-            ASSET_DIVIDEND_PAYMENT(18, true),
-            ASSET_ISSUANCE(19, true),
-            ASSET_TRADE(20, true),
-            ASSET_TRANSFER(21, true),
-            ASSET_DELETE(49, true),
-        // TYPE_DIGITAL_GOODS
-            DIGITAL_GOODS_DELISTED(22, true),
-            DIGITAL_GOODS_DELISTING(23, true),
-            DIGITAL_GOODS_DELIVERY(24, true),
-            DIGITAL_GOODS_FEEDBACK(25, true),
-            DIGITAL_GOODS_LISTING(26, true),
-            DIGITAL_GOODS_PRICE_CHANGE(27, true),
-            DIGITAL_GOODS_PURCHASE(28, true),
-            DIGITAL_GOODS_PURCHASE_EXPIRED(29, true),
-            DIGITAL_GOODS_QUANTITY_CHANGE(30, true),
-            DIGITAL_GOODS_REFUND(31, true),
-        // TYPE_ACCOUNT_CONTROL
-            ACCOUNT_CONTROL_EFFECTIVE_BALANCE_LEASING(32, true),
-            ACCOUNT_CONTROL_PHASING_ONLY(55, true),
-        // TYPE_CURRENCY
-            CURRENCY_DELETION(33, true),
-            CURRENCY_DISTRIBUTION(34, true),
-            CURRENCY_EXCHANGE(35, true),
-            CURRENCY_EXCHANGE_BUY(36, true),
-            CURRENCY_EXCHANGE_SELL(37, true),
-            CURRENCY_ISSUANCE(38, true),
-            CURRENCY_MINTING(39, true),
-            CURRENCY_OFFER_EXPIRED(40, true),
-            CURRENCY_OFFER_REPLACED(41, true),
-            CURRENCY_PUBLISH_EXCHANGE_OFFER(42, true),
-            CURRENCY_RESERVE_CLAIM(43, true),
-            CURRENCY_RESERVE_INCREASE(44, true),
-            CURRENCY_TRANSFER(45, true),
-            CURRENCY_UNDO_CROWDFUNDING(46, true),
-        // TYPE_DATA
-            TAGGED_DATA_UPLOAD(47, true),
-            TAGGED_DATA_EXTEND(48, true),
-        // TYPE_SHUFFLING
-            SHUFFLING_REGISTRATION(51, true),
-            SHUFFLING_PROCESSING(52, true),
-            SHUFFLING_CANCELLATION(53, true),
-            SHUFFLING_DISTRIBUTION(54, true);
+            ARBITRARY_MESSAGE(9, true);
 
 
         /** Event code mapping */

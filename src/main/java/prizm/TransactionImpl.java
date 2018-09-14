@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm;
 
 import prizm.crypto.Crypto;
@@ -32,8 +31,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
 final class TransactionImpl implements Transaction {
 
@@ -54,7 +51,6 @@ final class TransactionImpl implements Transaction {
         private Appendix.EncryptedMessage encryptedMessage;
         private Appendix.EncryptToSelfMessage encryptToSelfMessage;
         private Appendix.PublicKeyAnnouncement publicKeyAnnouncement;
-        private Appendix.Phasing phasing;
         private Appendix.PrunablePlainMessage prunablePlainMessage;
         private Appendix.PrunableEncryptedMessage prunableEncryptedMessage;
         private long blockId;
@@ -70,7 +66,7 @@ final class TransactionImpl implements Transaction {
         private short index = -1;
 
         BuilderImpl(byte version, byte[] senderPublicKey, long amountNQT, long feeNQT, short deadline,
-                    Attachment.AbstractAttachment attachment) {
+                Attachment.AbstractAttachment attachment) {
             this.version = version;
             this.deadline = deadline;
             this.senderPublicKey = senderPublicKey;
@@ -86,7 +82,7 @@ final class TransactionImpl implements Transaction {
                 timestamp = Prizm.getEpochTime();
             }
             if (!ecBlockSet) {
-                Block ecBlock = EconomicClustering.getECBlock(timestamp);
+                Block ecBlock = BlockchainImpl.getInstance().getECBlock(timestamp);
                 this.ecBlockHeight = ecBlock.getHeight();
                 this.ecBlockId = ecBlock.getId();
             }
@@ -152,12 +148,6 @@ final class TransactionImpl implements Transaction {
         @Override
         public BuilderImpl appendix(Appendix.PrunableEncryptedMessage prunableEncryptedMessage) {
             this.prunableEncryptedMessage = prunableEncryptedMessage;
-            return this;
-        }
-
-        @Override
-        public BuilderImpl appendix(Appendix.Phasing phasing) {
-            this.phasing = phasing;
             return this;
         }
 
@@ -240,7 +230,6 @@ final class TransactionImpl implements Transaction {
     private final Appendix.EncryptedMessage encryptedMessage;
     private final Appendix.EncryptToSelfMessage encryptToSelfMessage;
     private final Appendix.PublicKeyAnnouncement publicKeyAnnouncement;
-    private final Appendix.Phasing phasing;
     private final Appendix.PrunablePlainMessage prunablePlainMessage;
     private final Appendix.PrunableEncryptedMessage prunableEncryptedMessage;
 
@@ -259,7 +248,6 @@ final class TransactionImpl implements Transaction {
     private volatile DbKey dbKey;
     private volatile byte[] bytes = null;
 
-
     private TransactionImpl(BuilderImpl builder, String secretPhrase) throws PrizmException.NotValidException {
 
         this.timestamp = builder.timestamp;
@@ -277,14 +265,14 @@ final class TransactionImpl implements Transaction {
         this.senderId = builder.senderId;
         this.blockTimestamp = builder.blockTimestamp;
         this.fullHash = builder.fullHash;
-		this.ecBlockHeight = builder.ecBlockHeight;
+        this.ecBlockHeight = builder.ecBlockHeight;
         this.ecBlockId = builder.ecBlockId;
 
         List<Appendix.AbstractAppendix> list = new ArrayList<>();
         if ((this.attachment = builder.attachment) != null) {
             list.add(this.attachment);
         }
-        if ((this.message  = builder.message) != null) {
+        if ((this.message = builder.message) != null) {
             list.add(this.message);
         }
         if ((this.encryptedMessage = builder.encryptedMessage) != null) {
@@ -296,9 +284,6 @@ final class TransactionImpl implements Transaction {
         if ((this.encryptToSelfMessage = builder.encryptToSelfMessage) != null) {
             list.add(this.encryptToSelfMessage);
         }
-        if ((this.phasing = builder.phasing) != null) {
-            list.add(this.phasing);
-        }
         if ((this.prunablePlainMessage = builder.prunablePlainMessage) != null) {
             list.add(this.prunablePlainMessage);
         }
@@ -309,7 +294,7 @@ final class TransactionImpl implements Transaction {
         int appendagesSize = 0;
         for (Appendix appendage : appendages) {
             if (secretPhrase != null && appendage instanceof Appendix.Encryptable) {
-                ((Appendix.Encryptable)appendage).encrypt(secretPhrase);
+                ((Appendix.Encryptable) appendage).encrypt(secretPhrase);
             }
             appendagesSize += appendage.getSize();
         }
@@ -327,8 +312,8 @@ final class TransactionImpl implements Transaction {
         } else if (builder.signature != null) {
             this.signature = builder.signature;
         } else if (secretPhrase != null) {
-            if (getSenderPublicKey() != null && ! Arrays.equals(senderPublicKey, Crypto.getPublicKey(secretPhrase)) ) {
-                if(!Arrays.equals(senderPublicKey, Genesis.CREATOR_PUBLIC_KEY)){
+            if (getSenderPublicKey() != null && !Arrays.equals(senderPublicKey, Crypto.getPublicKey(secretPhrase))) {
+                if (!Arrays.equals(senderPublicKey, Genesis.CREATOR_PUBLIC_KEY)) {
                     throw new PrizmException.NotValidException("Secret phrase doesn't match transaction sender public key");
                 }
             }
@@ -443,7 +428,7 @@ final class TransactionImpl implements Transaction {
     }
 
     void setIndex(int index) {
-        this.index = (short)index;
+        this.index = (short) index;
     }
 
     @Override
@@ -507,7 +492,7 @@ final class TransactionImpl implements Transaction {
             } else {
                 fullHash = Crypto.sha256().digest(bytes());
             }
-            BigInteger bigInteger = new BigInteger(1, new byte[] {fullHash[7], fullHash[6], fullHash[5], fullHash[4], fullHash[3], fullHash[2], fullHash[1], fullHash[0]});
+            BigInteger bigInteger = new BigInteger(1, new byte[]{fullHash[7], fullHash[6], fullHash[5], fullHash[4], fullHash[3], fullHash[2], fullHash[1], fullHash[0]});
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
         }
@@ -567,15 +552,6 @@ final class TransactionImpl implements Transaction {
         return encryptToSelfMessage;
     }
 
-    @Override
-    public Appendix.Phasing getPhasing() {
-        return phasing;
-    }
-
-    boolean attachmentIsPhased() {
-        return attachment.isPhased(this);
-    }
-
     Appendix.PublicKeyAnnouncement getPublicKeyAnnouncement() {
         return publicKeyAnnouncement;
     }
@@ -611,7 +587,8 @@ final class TransactionImpl implements Transaction {
     byte[] bytes() {
         if (bytes == null) {
             try {
-                ByteBuffer buffer = ByteBuffer.allocate(getSize());
+                final int BUFFER_SIZE = getSize();
+                ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
                 buffer.order(ByteOrder.LITTLE_ENDIAN);
                 buffer.put(type.getType());
                 buffer.put((byte) ((version << 4) | type.getSubtype()));
@@ -619,6 +596,7 @@ final class TransactionImpl implements Transaction {
                 buffer.putShort(deadline);
                 buffer.put(getSenderPublicKey());
                 buffer.putLong(type.canHaveRecipient() ? recipientId : Genesis.CREATOR_ID);
+
                 if (useNQT()) {
                     buffer.putLong(amountNQT);
                     buffer.putLong(feeNQT);
@@ -649,6 +627,7 @@ final class TransactionImpl implements Transaction {
             } catch (RuntimeException e) {
                 if (signature != null) {
                     Logger.logDebugMessage("Failed to get transaction bytes for transaction: " + getJSONObject().toJSONString());
+                    e.printStackTrace();
                 }
                 throw e;
             }
@@ -712,10 +691,7 @@ final class TransactionImpl implements Transaction {
             if ((flags & position) != 0) {
                 builder.appendix(new Appendix.EncryptToSelfMessage(buffer, version));
             }
-            position <<= 1;
-            if ((flags & position) != 0) {
-                builder.appendix(new Appendix.Phasing(buffer, version));
-            }
+            position <<= 1; // Ignore Phasing flag
             position <<= 1;
             if ((flags & position) != 0) {
                 builder.appendix(new Appendix.PrunablePlainMessage(buffer, version));
@@ -728,8 +704,9 @@ final class TransactionImpl implements Transaction {
                 throw new PrizmException.NotValidException("Transaction bytes too long, " + buffer.remaining() + " extra bytes");
             }
             return builder;
-        } catch (PrizmException.NotValidException|RuntimeException e) {
+        } catch (PrizmException.NotValidException | RuntimeException e) {
             Logger.logDebugMessage("Failed to parse transaction bytes: " + Convert.toHexString(bytes));
+            e.printStackTrace();
             throw e;
         }
     }
@@ -737,18 +714,6 @@ final class TransactionImpl implements Transaction {
     static TransactionImpl.BuilderImpl newTransactionBuilder(byte[] bytes, JSONObject prunableAttachments) throws PrizmException.NotValidException {
         BuilderImpl builder = newTransactionBuilder(bytes);
         if (prunableAttachments != null) {
-            Attachment.ShufflingProcessing shufflingProcessing = Attachment.ShufflingProcessing.parse(prunableAttachments);
-            if (shufflingProcessing != null) {
-                builder.appendix(shufflingProcessing);
-            }
-            Attachment.TaggedDataUpload taggedDataUpload = Attachment.TaggedDataUpload.parse(prunableAttachments);
-            if (taggedDataUpload != null) {
-                builder.appendix(taggedDataUpload);
-            }
-            Attachment.TaggedDataExtend taggedDataExtend = Attachment.TaggedDataExtend.parse(prunableAttachments);
-            if (taggedDataExtend != null) {
-                builder.appendix(taggedDataExtend);
-            }
             Appendix.PrunablePlainMessage prunablePlainMessage = Appendix.PrunablePlainMessage.parse(prunableAttachments);
             if (prunablePlainMessage != null) {
                 builder.appendix(prunablePlainMessage);
@@ -789,7 +754,7 @@ final class TransactionImpl implements Transaction {
             appendage.loadPrunable(this);
             attachmentJSON.putAll(appendage.getJSONObject());
         }
-        if (! attachmentJSON.isEmpty()) {
+        if (!attachmentJSON.isEmpty()) {
             json.put("attachment", attachmentJSON);
         }
         json.put("version", version);
@@ -862,17 +827,15 @@ final class TransactionImpl implements Transaction {
                 builder.appendix(Appendix.EncryptedMessage.parse(attachmentData));
                 builder.appendix((Appendix.PublicKeyAnnouncement.parse(attachmentData)));
                 builder.appendix(Appendix.EncryptToSelfMessage.parse(attachmentData));
-                builder.appendix(Appendix.Phasing.parse(attachmentData));
                 builder.appendix(Appendix.PrunablePlainMessage.parse(attachmentData));
                 builder.appendix(Appendix.PrunableEncryptedMessage.parse(attachmentData));
             }
             return builder;
-        } catch (PrizmException.NotValidException|RuntimeException e) {
-            Logger.logDebugMessage("Failed to parse transaction: " + transactionData.toJSONString());
+        } catch (PrizmException.NotValidException | RuntimeException e) {
+            Logger.logDebugMessage("Failed to parse transaction: " + transactionData.toJSONString() + " trx="+transactionData.size());
             throw e;
         }
     }
-
 
     @Override
     public int getECBlockHeight() {
@@ -886,12 +849,12 @@ final class TransactionImpl implements Transaction {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof TransactionImpl && this.getId() == ((Transaction)o).getId();
+        return o instanceof TransactionImpl && this.getId() == ((Transaction) o).getId();
     }
 
     @Override
     public int hashCode() {
-        return (int)(getId() ^ (getId() >>> 32));
+        return (int) (getId() ^ (getId() >>> 32));
     }
 
     public boolean verifySignature() {
@@ -901,14 +864,14 @@ final class TransactionImpl implements Transaction {
     private volatile boolean hasValidSignature = false;
 
     private boolean checkSignature() {
-       if (!hasValidSignature) {
+        if (!hasValidSignature) {
             hasValidSignature = signature != null && Crypto.verify(signature, zeroSignature(getBytes()), getSenderPublicKey(), useNQT());
         }
         return hasValidSignature;
     }
 
     private int getSize() {
-        return signatureOffset() + 64  + (version > 0 ? 4 + 4 + 8 : 0) + appendagesSize;
+        return signatureOffset() + 64 + (version > 0 ? 4 + 4 + 8 : 0) + appendagesSize;
     }
 
     @Override
@@ -925,8 +888,9 @@ final class TransactionImpl implements Transaction {
     }
 
     private boolean useNQT() {
+//// ssss  WAS is DAS !!!!!       bilo 12908200 : 14271000
         return this.height > Constants.NQT_BLOCK
-                && (this.timestamp > (Constants.isTestnet ? 12908200 : 14271000)
+                && (this.timestamp > (Constants.isTestnet ? 4787757 - 100 : 4787757 - 100)
                 || Prizm.getBlockchain().getHeight() >= Constants.NQT_BLOCK);
     }
 
@@ -956,10 +920,10 @@ final class TransactionImpl implements Transaction {
         if (encryptToSelfMessage != null) {
             flags |= position;
         }
-        position <<= 1;
-        if (phasing != null) {
-            flags |= position;
-        }
+        position <<= 1; // We are still shifting position, but it's value is always zero
+//        if (phasing != null) {
+//            flags |= position;
+//        }
         position <<= 1;
         if (prunablePlainMessage != null) {
             flags |= position;
@@ -973,8 +937,14 @@ final class TransactionImpl implements Transaction {
 
     @Override
     public void validate() throws PrizmException.ValidationException {
-        if ((timestamp == 0 ? (deadline != 0 || feeNQT != 0) : (deadline < 1 || feeNQT < 0 ))
-                || (feeNQT == 0 ? (getSenderId()!=Genesis.CREATOR_ID):(getSenderId()==Genesis.CREATOR_ID))
+
+        int currentHeight = BlockchainImpl.getInstance().getHeight();
+        if (ParaExcludes.check(getSenderId(), currentHeight)) {
+            throw new PrizmException.NotValidException("This transaction can't be accepted (blacklisted)!");
+        }
+        
+        if ((timestamp == 0 ? (deadline != 0 || feeNQT != 0) : (deadline < 1 || feeNQT < 0))
+                || (feeNQT == 0 ? (getSenderId() != Genesis.CREATOR_ID) : (getSenderId() == Genesis.CREATOR_ID))
                 || feeNQT > Constants.MAX_BALANCE_NQT
                 || amountNQT < 0
                 || amountNQT > Constants.MAX_BALANCE_NQT
@@ -991,7 +961,7 @@ final class TransactionImpl implements Transaction {
             throw new PrizmException.NotValidException("Invalid attachment " + attachment + " for transaction of type " + type);
         }
 
-        if (! type.canHaveRecipient()) {
+        if (!type.canHaveRecipient()) {
             if (recipientId != 0 || getAmountNQT() != 0) {
                 throw new PrizmException.NotValidException("Transactions of this type must have recipient == 0, amount == 0");
             }
@@ -1003,32 +973,27 @@ final class TransactionImpl implements Transaction {
             }
         }
 
-        boolean validatingAtFinish = phasing != null && getSignature() != null && PhasingPoll.getPoll(getId()) != null;
+        boolean validatingAtFinish = getSignature() != null;
         for (Appendix.AbstractAppendix appendage : appendages) {
             appendage.loadPrunable(this);
-            if (! appendage.verifyVersion(this.version)) {
+            if (!appendage.verifyVersion(this.version)) {
                 throw new PrizmException.NotValidException("Invalid attachment version " + appendage.getVersion()
                         + " for transaction version " + this.version);
             }
-            if (validatingAtFinish) {
-                appendage.validateAtFinish(this);
-            } else {
-                appendage.validate(this);
-            }
+            appendage.validate(this);
         }
 
-        if (getFullSize() > Constants.MAX_PAYLOAD_LENGTH) {
-            throw new PrizmException.NotValidException("Transaction size " + getFullSize() + " exceeds maximum payload size");
+        if (getFullSize() > Constants.MAX_TRANSACTION_PAYLOAD_LENGTH) {
+            throw new PrizmException.NotValidException("Transaction size " + getFullSize() + " exceeds maximum transaction payload size");
         }
 
-        if (!validatingAtFinish) {
-            long minimumFeeNQT = getMinimumFeeNQT(Prizm.getBlockchain().getHeight());
-            if (feeNQT < minimumFeeNQT) {
-                throw new PrizmException.NotCurrentlyValidException(String.format("Transaction fee %f coins less than minimum fee %f coins at height %d",
-                        ((double) feeNQT) / Constants.ONE_PRIZM, ((double) minimumFeeNQT) / Constants.ONE_PRIZM, Prizm.getBlockchain().getHeight()));
-            }
+        int blockchainHeight = Prizm.getBlockchain().getHeight();
+
+        long minimumFeeNQT = getMinimumFeeNQT(blockchainHeight);
+        if (feeNQT < minimumFeeNQT) {
+            throw new PrizmException.NotCurrentlyValidException(String.format("Transaction fee %f coins less than minimum fee %f coins at height %d",
+                    ((double) feeNQT) / Constants.ONE_PRIZM, ((double) minimumFeeNQT) / Constants.ONE_PRIZM, blockchainHeight));
         }
-        AccountRestrictions.checkTransaction(this, validatingAtFinish);
     }
 
     // returns false iff double spending
@@ -1047,19 +1012,10 @@ final class TransactionImpl implements Transaction {
                 recipientAccount = Account.addOrGetAccount(recipientId);
             }
         }
-        if (referencedTransactionFullHash != null
-                && timestamp > Constants.REFERENCED_TRANSACTION_FULL_HASH_BLOCK_TIMESTAMP) {
-            senderAccount.addToUnconfirmedBalanceNQT(getType().getLedgerEvent(), getId(),
-                    0, Constants.UNCONFIRMED_POOL_DEPOSIT_NQT);
-        }
-        if (attachmentIsPhased()) {
-            senderAccount.addToBalanceNQT(getType().getLedgerEvent(), getId(), 0, -feeNQT);
-        }
+
         for (Appendix.AbstractAppendix appendage : appendages) {
-            if (!appendage.isPhased(this)) {
-                appendage.loadPrunable(this);
-                appendage.apply(this, senderAccount, recipientAccount);
-            }
+            appendage.loadPrunable(this);
+            appendage.apply(this, senderAccount, recipientAccount);
         }
     }
 
@@ -1069,21 +1025,10 @@ final class TransactionImpl implements Transaction {
     }
 
     boolean attachmentIsDuplicate(Map<TransactionType, Map<String, Integer>> duplicates, boolean atAcceptanceHeight) {
-        if (!attachmentIsPhased() && !atAcceptanceHeight) {
-            // can happen for phased transactions having non-phasable attachment
-            return false;
-        }
         if (atAcceptanceHeight) {
-            if (AccountRestrictions.isBlockDuplicate(this, duplicates)) {
-                return true;
-            }
             // all are checked at acceptance height for block duplicates
             if (type.isBlockDuplicate(this, duplicates)) {
                 return true;
-            }
-            // phased are not further checked at acceptance height
-            if (attachmentIsPhased()) {
-                return false;
             }
         }
         // non-phased at acceptance height, and phased at execution height
@@ -1095,19 +1040,8 @@ final class TransactionImpl implements Transaction {
     }
 
     private long getMinimumFeeNQT(int blockchainHeight) {
-        long totalFee = 0;
-        for (Appendix.AbstractAppendix appendage : appendages) {
-            appendage.loadPrunable(this);
-            if (blockchainHeight < appendage.getBaselineFeeHeight()) {
-                return 0; // No need to validate fees before baseline block
-            }
-            Fee fee = blockchainHeight >= appendage.getNextFeeHeight() ? appendage.getNextFee(this) : appendage.getBaselineFee(this);
-            totalFee = Math.addExact(totalFee, fee.getFee(this, appendage));
-        }
-        if (referencedTransactionFullHash != null) {
-            totalFee = Math.addExact(totalFee, Constants.ONE_PRIZM);
-        }
-        return totalFee;
+        // Calculation depended on attachments, but we are not using payed attachments! Use constant instead.
+        return Constants.MIN_FEE_NQT;
     }
 
 }

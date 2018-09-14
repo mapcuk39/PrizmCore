@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm;
 
 import java.util.Calendar;
@@ -23,17 +22,21 @@ public final class Constants {
 
     public static final boolean isTestnet = Prizm.getBooleanProperty("prizm.isTestnet");
     public static final boolean isOffline = Prizm.getBooleanProperty("prizm.isOffline");
+    public static final boolean isLightClient = Prizm.getBooleanProperty("prizm.isLightClient");
+    public static final String customLoginWarning = Prizm.getStringProperty("prizm.customLoginWarning", null, false, "UTF-8");
 
     public static final int MAX_NUMBER_OF_TRANSACTIONS = 800;
-    public static final int MIN_TRANSACTION_SIZE = 176;
+    public static final int MIN_TRANSACTION_SIZE = 400;
     public static final int MAX_PAYLOAD_LENGTH = MAX_NUMBER_OF_TRANSACTIONS * MIN_TRANSACTION_SIZE;
+    public static final int MAX_TRANSACTION_PAYLOAD_LENGTH = 1536;
     public static final long MAX_BALANCE_PRIZM = 10000000L;
     public static final long ONE_PRIZM = 100;
     public static final long MAX_BALANCE_NQT = MAX_BALANCE_PRIZM * ONE_PRIZM;
     public static final long INITIAL_BASE_TARGET = 15372286728L;
-    public static final long MAX_BASE_TARGET = MAX_BALANCE_PRIZM  * INITIAL_BASE_TARGET;
-    public static final long MAX_BASE_TARGET_2 =  INITIAL_BASE_TARGET * 50;
-    public static final long MIN_BASE_TARGET = INITIAL_BASE_TARGET * 9 / 10;
+    public static final long MAX_BASE_TARGET = MAX_BALANCE_PRIZM * INITIAL_BASE_TARGET;
+    public static final long MAX_BASE_TARGET_2 = INITIAL_BASE_TARGET * 50;
+    public static final long MIN_BASE_TARGET = INITIAL_BASE_TARGET  * 9 / 10;
+    public static final long MIN_FEE_NQT = 0L;
     public static final int MIN_BLOCKTIME_LIMIT = 50;
     public static final int MAX_BLOCKTIME_LIMIT = 70;
     public static final int BASE_TARGET_GAMMA = 64;
@@ -43,27 +46,24 @@ public final class Constants {
     public static final long MIN_FORGING_BALANCE_NQT = 1000 * ONE_PRIZM;
 
     public static final int MAX_TIMEDRIFT = 15; // allow up to 15 s clock difference
-    public static final int FORGING_DELAY = Prizm.getIntProperty("prizm.forgingDelay");
-    public static final int FORGING_SPEEDUP = Prizm.getIntProperty("prizm.forgingSpeedup");
 
-    public static final byte MAX_PHASING_VOTE_TRANSACTIONS = 10;
-    public static final byte MAX_PHASING_WHITELIST_SIZE = 10;
-    public static final byte MAX_PHASING_LINKED_TRANSACTIONS = 10;
-    public static final int MAX_PHASING_DURATION = 14 * 600;
-    public static final int MAX_PHASING_REVEALED_SECRET_LENGTH = 100;
+    // Such a toys are unneeded and it's behaviour is too unpredictable, so set to 0
+    public static final int FORGING_DELAY = 0;
+    public static final int FORGING_SPEEDUP = 0;
 
-    public static final int MAX_ALIAS_URI_LENGTH = 1000;
+    public static final int MAX_ALIAS_URI_LENGTH = 512;
     public static final int MAX_ALIAS_LENGTH = 100;
 
     public static final int MAX_ARBITRARY_MESSAGE_LENGTH = 160;
     public static final int MAX_ENCRYPTED_MESSAGE_LENGTH = 160 + 16;
 
-    public static final int MAX_PRUNABLE_MESSAGE_LENGTH = 42 * 1024;
-    public static final int MAX_PRUNABLE_ENCRYPTED_MESSAGE_LENGTH = 42 * 1024;
+    public static final int MAX_PRUNABLE_MESSAGE_LENGTH = 512;  //ss * 42
+    public static final int MAX_PRUNABLE_ENCRYPTED_MESSAGE_LENGTH = 512;  //ss * 42
 
     public static final int MIN_PRUNABLE_LIFETIME = isTestnet ? 1440 * 60 : 14 * 600 * 60;
     public static final int MAX_PRUNABLE_LIFETIME;
     public static final boolean ENABLE_PRUNING;
+
     static {
         int maxPrunableLifetime = Prizm.getIntProperty("prizm.maxPrunableLifetime");
         ENABLE_PRUNING = maxPrunableLifetime >= 0;
@@ -72,122 +72,72 @@ public final class Constants {
     public static final boolean INCLUDE_EXPIRED_PRUNABLE = Prizm.getBooleanProperty("prizm.includeExpiredPrunable");
 
     public static final int MAX_ACCOUNT_NAME_LENGTH = 100;
-    public static final int MAX_ACCOUNT_DESCRIPTION_LENGTH = 1000;
+    public static final int MAX_ACCOUNT_DESCRIPTION_LENGTH = 512;
 
-    public static final int MAX_ACCOUNT_PROPERTY_NAME_LENGTH = 32;
-    public static final int MAX_ACCOUNT_PROPERTY_VALUE_LENGTH = 160;
-
-    public static final long MAX_ASSET_QUANTITY_QNT = 1000000000L * 100000000L;
-    public static final int MIN_ASSET_NAME_LENGTH = 3;
-    public static final int MAX_ASSET_NAME_LENGTH = 10;
-    public static final int MAX_ASSET_DESCRIPTION_LENGTH = 1000;
-    public static final int MAX_SINGLETON_ASSET_DESCRIPTION_LENGTH = 160;
-    public static final int MAX_ASSET_TRANSFER_COMMENT_LENGTH = 1000;
-    public static final int MAX_DIVIDEND_PAYMENT_ROLLBACK = 1441;
-
-    public static final int MAX_POLL_NAME_LENGTH = 100;
-    public static final int MAX_POLL_DESCRIPTION_LENGTH = 1000;
-    public static final int MAX_POLL_OPTION_LENGTH = 100;
-    public static final int MAX_POLL_OPTION_COUNT = 100;
-    public static final int MAX_POLL_DURATION = 14 * 600;
-
-    public static final byte MIN_VOTE_VALUE = -92;
-    public static final byte MAX_VOTE_VALUE = 92;
-    public static final byte NO_VOTE_VALUE = Byte.MIN_VALUE;
-
-    public static final int MAX_DGS_LISTING_QUANTITY = 1000000000;
-    public static final int MAX_DGS_LISTING_NAME_LENGTH = 100;
-    public static final int MAX_DGS_LISTING_DESCRIPTION_LENGTH = 1000;
-    public static final int MAX_DGS_LISTING_TAGS_LENGTH = 100;
-    public static final int MAX_DGS_GOODS_LENGTH = 1000;
-
-    public static final int MAX_HUB_ANNOUNCEMENT_URIS = 100;
-    public static final int MAX_HUB_ANNOUNCEMENT_URI_LENGTH = 1000;
-    public static final long MIN_HUB_EFFECTIVE_BALANCE = 100000;
-
-    public static final int MIN_CURRENCY_NAME_LENGTH = 3;
-    public static final int MAX_CURRENCY_NAME_LENGTH = 10;
-    public static final int MIN_CURRENCY_CODE_LENGTH = 3;
-    public static final int MAX_CURRENCY_CODE_LENGTH = 5;
-    public static final int MAX_CURRENCY_DESCRIPTION_LENGTH = 1000;
-    public static final long MAX_CURRENCY_TOTAL_SUPPLY = 1000000000L * 100000000L;
-    public static final int MAX_MINTING_RATIO = 10000; // per mint units not more than 0.01% of total supply
-    public static final byte MIN_NUMBER_OF_SHUFFLING_PARTICIPANTS = 3;
-    public static final byte MAX_NUMBER_OF_SHUFFLING_PARTICIPANTS = 30; // max possible at current block payload limit is 51
-    public static final short MAX_SHUFFLING_REGISTRATION_PERIOD = (short)600 * 7;
-    public static final short SHUFFLING_PROCESSING_DEADLINE = (short)(isTestnet ? 10 : 100);
-
-    public static final int MAX_TAGGED_DATA_NAME_LENGTH = 100;
-    public static final int MAX_TAGGED_DATA_DESCRIPTION_LENGTH = 1000;
-    public static final int MAX_TAGGED_DATA_TAGS_LENGTH = 100;
-    public static final int MAX_TAGGED_DATA_TYPE_LENGTH = 100;
-    public static final int MAX_TAGGED_DATA_CHANNEL_LENGTH = 100;
-    public static final int MAX_TAGGED_DATA_FILENAME_LENGTH = 100;
-    public static final int MAX_TAGGED_DATA_DATA_LENGTH = 42 * 1024;
-
-
-    public static final int TRANSPARENT_FORGING_BLOCK = 0;
-
-
+    public static final int TRANSPARENT_FORGING_BLOCK = 1440;
     public static final int TRANSPARENT_FORGING_BLOCK_3 = 1450;
-
     public static final int TRANSPARENT_FORGING_BLOCK_5 = 1455;
-    public static final int TRANSPARENT_FORGING_BLOCK_6 = Integer.MAX_VALUE;
-    public static final int TRANSPARENT_FORGING_BLOCK_7 = Integer.MAX_VALUE;
-    public static final int TRANSPARENT_FORGING_BLOCK_8 = Integer.MAX_VALUE;
-    public static final int NQT_BLOCK = isTestnet ? 76500 : 0;
+    public static final int TRANSPARENT_FORGING_BLOCK_8 = 78000;
 
-
-    public static final int REFERENCED_TRANSACTION_FULL_HASH_BLOCK = 100515;
-    public static final int REFERENCED_TRANSACTION_FULL_HASH_BLOCK_TIMESTAMP = 1001285;
+    public static final int FORBID_FORGING_WITH_YOUNG_PUBLIC_KEY = 75000; // At this height we do not allow to forge if public key is announced in previous 1440 blocks or is not announced.
+    public static final int NQT_BLOCK = isTestnet ? 0 : 0;   /// NQT ISPOLZUETSY S 0 BLOCKA
+    public static final int REFERENCED_TRANSACTION_FULL_HASH_BLOCK = 91906; // isTestnet ? NQT_BLOCK : 140000;// //!!! nado poymat taymshtamp
+    public static final int REFERENCED_TRANSACTION_FULL_HASH_BLOCK_TIMESTAMP = 5602294; // isTestnet ? 13031352 : 15134204;  //metka vremeni
     public static final int MAX_REFERENCED_TRANSACTION_TIMESPAN = 60 * 600 * 60;
-    public static final int DIGITAL_GOODS_STORE_BLOCK = 16;
-    public static final int MONETARY_SYSTEM_BLOCK = 1000517;
-    public static final int PHASING_BLOCK = 1000518;
-    public static final int CHECKSUM_BLOCK_16 = 1000519;
-    public static final int SHUFFLING_BLOCK = 1000521;
-    public static final int CHECKSUM_BLOCK_17 = 100522 ;
-    public static final int CHECKSUM_BLOCK_18 = 100523;
 
-    public static final int LAST_CHECKSUM_BLOCK = CHECKSUM_BLOCK_18;
-    public static final int LAST_KNOWN_BLOCK = 0;
+    public static final String HARDFORK_ALIAS = "hardforkheight";
 
-    public static final int[] MIN_VERSION = new int[] {1, 7};
+    public static final int ENFORCE_FULL_TRANSACTION_VALIDATION = 1500;
 
-    static final long UNCONFIRMED_POOL_DEPOSIT_NQT = (isTestnet ? 50 : 100) * ONE_PRIZM;
-    public static final long SHUFFLING_DEPOSIT_NQT = (isTestnet ? 7 : 1000) * ONE_PRIZM;
+    public static final int LAST_KNOWN_BLOCK = 1440; // there was CHECKSUM_BLOCK_18; which is for height 251010
+
+    public static final int[] MIN_VERSION = new int[] {1, 8, 1};
+    public static final int[] MIN_PROXY_VERSION = new int[] {1, 8, 1};
 
     public static final boolean correctInvalidFees = Prizm.getBooleanProperty("prizm.correctInvalidFees");
 
     // --------[INIT #A]-------
     public static final long EPOCH_BEGINNING;
+
     static {
         Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-        calendar.set(Calendar.YEAR, 2017);
-        calendar.set(Calendar.MONTH, Calendar.FEBRUARY);
-        calendar.set(Calendar.DAY_OF_MONTH, 1);
-        calendar.set(Calendar.HOUR_OF_DAY, 1);
-        calendar.set(Calendar.MINUTE, 45);
+        calendar.set(Calendar.YEAR, 2018);
+        calendar.set(Calendar.MONTH, Calendar.JULY);
+        calendar.set(Calendar.DAY_OF_MONTH, 27);
+        calendar.set(Calendar.HOUR_OF_DAY, 18);
+        calendar.set(Calendar.MINUTE, 18);
         calendar.set(Calendar.SECOND, 0);
         calendar.set(Calendar.MILLISECOND, 0);
         EPOCH_BEGINNING = calendar.getTimeInMillis();
     }
 
     public static final String ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyz";
-    public static final String ALLOWED_CURRENCY_CODE_LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-    public static final int EC_RULE_TERMINATOR = 600; /* cfb: This constant defines a straight edge when "longest chain"
-                                                        rule is outweighed by "economic majority" rule; the terminator
-                                                        is set as number of seconds before the current time. */
+    private Constants() {
+    } // never
 
-    public static final int EC_BLOCK_DISTANCE_LIMIT = 60;
-
-    private Constants() {} // never
-    
     public static final String IN_BLOCK_ID = "inblockID";
     public static final String IN_BLOCK_HEIGHT = "inblockHeight";
     public static final String IN_TRANSACT_ID = "inTransactId";
     public static final String RANDOM = "random";
-    
-    public static final String GENESIS_SECRET_PHRASE = "dwell devil surround unless whistle grew stolen slap future enter bar wife somewhere point everytime fact";
+
+    // At this height we allow to INCREASE numberOfForkConfirmations MANUALLY inside prizm.properties to value higher then 1
+    // At height below this one, numberOfForkConfirmations max value is 1
+    public static final int FIRST_FORK_BLOCK = 74000;
+
+    /*
+     From this height we:
+     1. validate encrypted message length (should be < MAX_ENCRYPTED_MESSAGE_LENGTH)
+     2. validate duplicates for ACCOUNT INFO transactions
+     Too long messages and duplicate ACCOUNT INFO transactions are rejected
+    */
+    public static final int ADVANCED_MESSAGING_VALIDATION = 100000;   // Should be OK
+
+    // TODO can be safely deleted with a small rework
+    public static final int CONTROL_TRX_TO_ORDINARY = 1500;     // allow only payments and messages
+    public static final int FEE_MAX_10 = 1440;                  // Limit fee by 10 PZM (1000 cents)
+	public static final int THIEF_BLOCK_BEGIN = 52573;
+    public static final int CURRENT_BLOCK_VERSION = 3;
+        
+    public static final String GENESIS_SECRET_PHRASE = "132471795724474602596090885447809734073440405690173336453401505030282785124554759405469934798178728031618033988749894848204586834365638117720309179805762862135448622705260462818902449707207204189391137431415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679";    
 }

@@ -24,6 +24,7 @@ import org.json.simple.JSONStreamAware;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import prizm.Constants;
 
 public final class PopOff extends APIServlet.APIRequestHandler {
 
@@ -50,8 +51,10 @@ public final class PopOff extends APIServlet.APIRequestHandler {
             Prizm.getBlockchainProcessor().setGetMoreBlocks(false);
             if (numBlocks > 0) {
                 blocks = Prizm.getBlockchainProcessor().popOffTo(Prizm.getBlockchain().getHeight() - numBlocks);
+                Prizm.para().rollbackToBlock(Prizm.getBlockchain().getHeight() - numBlocks);
             } else if (height > 0) {
                 blocks = Prizm.getBlockchainProcessor().popOffTo(height);
+                Prizm.para().rollbackToBlock(height);
             } else {
                 return JSONResponses.missing("numBlocks", "height");
             }

@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.tools;
 
 import java.io.BufferedReader;
@@ -26,7 +25,7 @@ public final class CompareTraceFiles {
         String testFile = args.length > 0 ? args[0] : "prizm-trace.csv";
         String defaultFile = args.length > 1 ? args[1] : "prizm-trace-default.csv";
         try (BufferedReader defaultReader = new BufferedReader(new FileReader(defaultFile));
-             BufferedReader testReader = new BufferedReader(new FileReader(testFile))) {
+                BufferedReader testReader = new BufferedReader(new FileReader(testFile))) {
             System.out.println(defaultReader.readLine());
             testReader.readLine();
             String testLine = testReader.readLine();

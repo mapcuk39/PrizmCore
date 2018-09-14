@@ -56,6 +56,7 @@ public class DesktopSystemTray {
             Logger.logInfoMessage("SystemTray is not supported");
             return;
         }
+        System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
         final PopupMenu popup = new PopupMenu();
         imageIcon = new ImageIcon("html/ui/img/prizm-icon-32x32.png", "tray icon");
         trayIcon = new TrayIcon(imageIcon.getImage());
@@ -68,22 +69,28 @@ public class DesktopSystemTray {
             openWalletInBrowser.setEnabled(false);
         }
         MenuItem showDesktopApplication = new MenuItem("Show Desktop Application");
+        MenuItem showLightWallet = new MenuItem("Show light wallet");
         MenuItem refreshDesktopApplication = new MenuItem("Refresh Wallet");
+        MenuItem launchPrizmAerial = new MenuItem("Launch Aerial");
         if (!Prizm.isDesktopApplicationEnabled()) {
             showDesktopApplication.setEnabled(false);
             refreshDesktopApplication.setEnabled(false);
+            showLightWallet.setEnabled(false);
         }
         viewLog = new MenuItem("View Log File");
         if (!Desktop.getDesktop().isSupported(Desktop.Action.OPEN)) {
             viewLog.setEnabled(false);
         }
         MenuItem status = new MenuItem("Status");
-
+        
+        popup.add(showDesktopApplication);
+        popup.add(showLightWallet);
+        popup.add(launchPrizmAerial);
+        popup.addSeparator();
         popup.add(status);
         popup.add(viewLog);
         popup.addSeparator();
         popup.add(openWalletInBrowser);
-        popup.add(showDesktopApplication);
         popup.add(refreshDesktopApplication);
         popup.addSeparator();
         popup.add(shutdown);
@@ -114,12 +121,22 @@ public class DesktopSystemTray {
             }
         });
 
+        showLightWallet.addActionListener(e -> {
+            try {
+                Class.forName("prizmdesktop.DesktopApplication").getMethod("lightlaunch").invoke(null);
+            } catch (ReflectiveOperationException exception) {
+                Logger.logInfoMessage("prizmdesktop.DesktopApplication failed to launch", exception);
+            }
+        });
         refreshDesktopApplication.addActionListener(e -> {
             try {
                 Class.forName("prizmdesktop.DesktopApplication").getMethod("refresh").invoke(null);
             } catch (ReflectiveOperationException exception) {
                 Logger.logInfoMessage("prizmdesktop.DesktopApplication failed to refresh", exception);
             }
+        });
+        launchPrizmAerial.addActionListener(e -> {
+            RuntimeEnvironment.getDirProvider().startNativeModule("aerial", "");
         });
 
         viewLog.addActionListener(e -> {
@@ -134,7 +151,7 @@ public class DesktopSystemTray {
 
         shutdown.addActionListener(e -> {
             if(JOptionPane.showConfirmDialog (null,
-                    "Sure you want to shutdown _Coin_?\n\nIf you do, this will stop forging, shufflers and account monitors.\n\n",
+                    "Sure you want to shutdown PRIZM?\n\nIf you do, this will stop forging, shufflers and account monitors.\n\n",
                     "Shutdown",
                     JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
                 Logger.logInfoMessage("Shutdown requested by System Tray");
@@ -277,5 +294,9 @@ public class DesktopSystemTray {
         int exp = (int) (Math.log(bytes) / Math.log(unit));
         String pre = "" + ("KMGTPE").charAt(exp-1);
         return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+    }
+
+    void alert(String message) {
+        JOptionPane.showMessageDialog(null, message, "Initialization Error", JOptionPane.ERROR_MESSAGE);
     }
 }

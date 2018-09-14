@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm;
 
 import prizm.addons.AddOns;
@@ -23,6 +22,7 @@ import prizm.env.RuntimeEnvironment;
 import prizm.env.RuntimeMode;
 import prizm.env.ServerStatus;
 import prizm.http.API;
+import prizm.http.APIProxy;
 import prizm.peer.Peers;
 import prizm.user.Users;
 import prizm.util.Convert;
@@ -36,6 +36,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.file.Files;
@@ -49,30 +50,21 @@ import java.util.List;
 import java.util.Properties;
 
 public final class Prizm {
-    
+
     private static ParaMining paraMining;
-//    private static ParaMining paraMining = new ParaMining() {
-//        @Override
-//        public List<ParaBlock.Payout> process(ParaBlock paraBlock) throws ParaMiningException {
-//            return new ArrayList<>();
-//        }
-//
-//        @Override
-//        public void check(ParaBlock paraBlock) throws ParaMiningException {
-//        }
-//    };
 
     public static ParaMining para() {
         return paraMining;
     }
 
-    public static final String VERSION = "1.8.3";
-    public static final String APPLICATION = "NRS";
+    public static final String VERSION = "1.9.17";
+    public static final String APPLICATION = "PZM";
 
     private static volatile Time time = new Time.EpochTime();
 
     public static final String PRIZM_DEFAULT_PROPERTIES = "prizm.default.properties";
-    public static final String PRIZM_PROPERTIES = "properties";
+    public static final String PRIZM_PROPERTIES = "prizm.properties";
+    public static final String PRIZM_INSTALLER_PROPERTIES = "prizm.installer.properties";
     public static final String CONFIG_DIR = "conf";
 
     private static final RuntimeMode runtimeMode;
@@ -89,10 +81,9 @@ public final class Prizm {
         dirProvider = RuntimeEnvironment.getDirProvider();
         System.out.println("User home folder " + dirProvider.getUserHomeDir());
         loadProperties(defaultProperties, PRIZM_DEFAULT_PROPERTIES, true);
-        // ---- [INIT comment out] -----
-//        if (!VERSION.equals(Prizm.defaultProperties.getProperty("prizm.version"))) {
-//            throw new RuntimeException("Using an prizm.default.properties file from a version other than " + VERSION + " is not supported!!!");
-//        }
+        if (!VERSION.equals(Prizm.defaultProperties.getProperty("prizm.version"))) {
+            throw new RuntimeException("Using an prizm.default.properties file from a version other than " + VERSION + " is not supported!!!");
+        }
     }
 
     private static void redirectSystemStreams(String streamName) {
@@ -128,6 +119,7 @@ public final class Prizm {
     private static final Properties properties = new Properties(defaultProperties);
 
     static {
+        loadProperties(properties, PRIZM_INSTALLER_PROPERTIES, true);
         loadProperties(properties, PRIZM_PROPERTIES, false);
     }
 
@@ -163,7 +155,7 @@ public final class Prizm {
                         System.out.printf("Creating dir %s\n", homeDir);
                         try {
                             Files.createDirectory(Paths.get(homeDir));
-                        } catch(Exception e) {
+                        } catch (Exception e) {
                             if (!(e instanceof NoSuchFileException)) {
                                 throw e;
                             }
@@ -191,7 +183,7 @@ public final class Prizm {
                     throw new IllegalArgumentException("Error loading " + propertiesFile, e);
                 }
             }
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             e.printStackTrace(); // make sure we log this exception
             throw e;
         }
@@ -235,13 +227,24 @@ public final class Prizm {
     }
 
     public static String getStringProperty(String name, String defaultValue, boolean doNotLog) {
+        return getStringProperty(name, defaultValue, doNotLog, null);
+    }
+
+    public static String getStringProperty(String name, String defaultValue, boolean doNotLog, String encoding) {
         String value = properties.getProperty(name);
-        if (value != null && ! "".equals(value)) {
+        if (value != null && !"".equals(value)) {
             Logger.logMessage(name + " = \"" + (doNotLog ? "{not logged}" : value) + "\"");
-            return value;
         } else {
             Logger.logMessage(name + " not defined");
-            return defaultValue;
+            value = defaultValue;
+        }
+        if (encoding == null || value == null) {
+            return value;
+        }
+        try {
+            return new String(value.getBytes("ISO-8859-1"), encoding);
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -260,7 +263,11 @@ public final class Prizm {
         return result;
     }
 
-    public static Boolean getBooleanProperty(String name) {
+    public static boolean getBooleanProperty(String name) {
+        return getBooleanProperty(name, false);
+    }
+
+    public static boolean getBooleanProperty(String name, boolean defaultValue) {
         String value = properties.getProperty(name);
         if (Boolean.TRUE.toString().equals(value)) {
             Logger.logMessage(name + " = \"true\"");
@@ -269,8 +276,8 @@ public final class Prizm {
             Logger.logMessage(name + " = \"false\"");
             return false;
         }
-        Logger.logMessage(name + " not defined, assuming false");
-        return false;
+        Logger.logMessage(name + " not defined, using default " + defaultValue);
+        return defaultValue;
     }
 
     public static Blockchain getBlockchain() {
@@ -286,7 +293,7 @@ public final class Prizm {
     }
 
     public static Transaction.Builder newTransactionBuilder(byte[] senderPublicKey, long amountNQT, long feeNQT, short deadline, Attachment attachment) {
-        return new TransactionImpl.BuilderImpl((byte)1, senderPublicKey, amountNQT, feeNQT, deadline, (Attachment.AbstractAttachment)attachment);
+        return new TransactionImpl.BuilderImpl((byte) 1, senderPublicKey, amountNQT, feeNQT, deadline, (Attachment.AbstractAttachment) attachment);
     }
 
     public static Transaction.Builder newTransactionBuilder(byte[] transactionBytes) throws PrizmException.NotValidException {
@@ -303,6 +310,21 @@ public final class Prizm {
 
     public static int getEpochTime() {
         return time.getTime();
+    }
+
+    public static int getHardForkHeight() {
+        if (getBlockchain().getHeight() < Constants.LAST_KNOWN_BLOCK) {
+            return Integer.MAX_VALUE;
+        }
+        Alias hardforkAlias = Alias.getAlias(Constants.HARDFORK_ALIAS);
+        if (hardforkAlias == null) {
+            return Integer.MAX_VALUE;
+        }
+        try {
+            return Integer.parseInt(hardforkAlias.getAliasURI());
+        } catch (NumberFormatException e) {
+            return Integer.MAX_VALUE;
+        }
     }
 
     static void setTime(Time time) {
@@ -333,12 +355,13 @@ public final class Prizm {
         AddOns.shutdown();
         API.shutdown();
         Users.shutdown();
-        FundingMonitor.shutdown();
         ThreadPool.shutdown();
+        BlockchainProcessorImpl.getInstance().shutdown();
         Peers.shutdown();
         Db.shutdown();
         Logger.logShutdownMessage("Prizm server " + VERSION + " stopped.");
         Logger.shutdown();
+        Prizm.para().shutdown();
         runtimeMode.shutdown();
     }
 
@@ -356,38 +379,16 @@ public final class Prizm {
                 Thread secureRandomInitThread = initSecureRandom();
                 setServerStatus(ServerStatus.BEFORE_DATABASE, null);
                 Db.init();
-                paraMining = new ParaEngine(Db.PARA_DB_URL+";"+Db.PARA_DB_PARAMS, Db.PARA_DB_USERNAME, Db.PARA_DB_PASSWORD);
+                paraMining = new ParaEngine(Db.PARA_DB_URL, Db.PARA_DB_USERNAME, Db.PARA_DB_PASSWORD);
                 setServerStatus(ServerStatus.AFTER_DATABASE, null);
                 TransactionProcessorImpl.getInstance();
                 BlockchainProcessorImpl.getInstance();
                 Account.init();
-                AccountRestrictions.init();
                 AccountLedger.init();
                 Alias.init();
-                Asset.init();
-                DigitalGoodsStore.init();
-                Hub.init();
-                Order.init();
-                Poll.init();
-                PhasingPoll.init();
-                Trade.init();
-                AssetTransfer.init();
-                AssetDelete.init();
-                Vote.init();
-                PhasingVote.init();
-                Currency.init();
-                CurrencyBuyOffer.init();
-                CurrencySellOffer.init();
-                CurrencyFounder.init();
-                CurrencyMint.init();
-                CurrencyTransfer.init();
-                Exchange.init();
-                ExchangeRequest.init();
-                Shuffling.init();
-                ShufflingParticipant.init();
                 PrunableMessage.init();
-                TaggedData.init();
                 Peers.init();
+                APIProxy.init();
                 Generator.init();
                 AddOns.init();
                 API.init();
@@ -401,13 +402,15 @@ public final class Prizm {
                 }
                 try {
                     secureRandomInitThread.join(10000);
-                } catch (InterruptedException ignore) {}
+                } catch (InterruptedException ignore) {
+                }
                 testSecureRandom();
                 long currentTime = System.currentTimeMillis();
                 Logger.logMessage("Initialization took " + (currentTime - startTime) / 1000 + " seconds");
                 Logger.logMessage("Prizm server " + VERSION + " started successfully.");
                 Logger.logMessage("Copyright © 2013-2016 The Nxt Core Developers.");
-                Logger.logMessage("Distributed under GPLv2, with ABSOLUTELY NO WARRANTY.");
+                Logger.logMessage("Copyright © 2016-2017 Jelurida IP B.V.");
+                Logger.logMessage("Distributed under the Jelurida Public License version 1.0 for the N.x.t Public Blockchain Platform, with ABSOLUTELY NO WARRANTY.");
                 if (API.getWelcomePageUri() != null) {
                     Logger.logMessage("Client UI is at " + API.getWelcomePageUri());
                 }
@@ -420,6 +423,8 @@ public final class Prizm {
                 }
             } catch (Exception e) {
                 Logger.logErrorMessage(e.getMessage(), e);
+                runtimeMode.alert(e.getMessage() + "\n" +
+                        "See additional information in " + dirProvider.getLogFileDir() + System.getProperty("file.separator") + "prizm.log");
                 System.exit(1);
             }
         }
@@ -431,43 +436,43 @@ public final class Prizm {
             initialized = true;
         }
 
-        private Init() {} // never
+        private Init() {
+        } // never
 
     }
 
     private static void setSystemProperties() {
-      // Override system settings that the user has define in prizm.properties file.
-      String[] systemProperties = new String[] {
-        "socksProxyHost",
-        "socksProxyPort",
-      };
+        // Override system settings that the user has define in prizm.properties file.
+        String[] systemProperties = new String[]{
+            "socksProxyHost",
+            "socksProxyPort",};
 
-      for (String propertyName : systemProperties) {
-        String propertyValue;
-        if ((propertyValue = getStringProperty(propertyName)) != null) {
-          System.setProperty(propertyName, propertyValue);
+        for (String propertyName : systemProperties) {
+            String propertyValue;
+            if ((propertyValue = getStringProperty(propertyName)) != null) {
+                System.setProperty(propertyName, propertyValue);
         }
       }
     }
 
     private static void logSystemProperties() {
-        String[] loggedProperties = new String[] {
-                "java.version",
-                "java.vm.version",
-                "java.vm.name",
-                "java.vendor",
-                "java.vm.vendor",
-                "java.home",
-                "java.library.path",
-                "java.class.path",
-                "os.arch",
-                "sun.arch.data.model",
-                "os.name",
-                "file.encoding",
-                "java.security.policy",
-                "java.security.manager",
-                RuntimeEnvironment.RUNTIME_MODE_ARG,
-                RuntimeEnvironment.DIRPROVIDER_ARG
+        String[] loggedProperties = new String[]{
+            "java.version",
+            "java.vm.version",
+            "java.vm.name",
+            "java.vendor",
+            "java.vm.vendor",
+            "java.home",
+            "java.library.path",
+            "java.class.path",
+            "os.arch",
+            "sun.arch.data.model",
+            "os.name",
+            "file.encoding",
+            "java.security.policy",
+            "java.security.manager",
+            RuntimeEnvironment.RUNTIME_MODE_ARG,
+            RuntimeEnvironment.DIRPROVIDER_ARG
         };
         for (String property : loggedProperties) {
             Logger.logDebugMessage(String.format("%s = %s", property, System.getProperty(property)));
@@ -478,27 +483,24 @@ public final class Prizm {
     }
 
     private static Thread initSecureRandom() {
-        Thread secureRandomInitThread = new Thread(() -> {
-            Crypto.getSecureRandom().nextBytes(new byte[1024]);
-        });
+        Thread secureRandomInitThread = new Thread(() -> Crypto.getSecureRandom().nextBytes(new byte[1024]));
         secureRandomInitThread.setDaemon(true);
         secureRandomInitThread.start();
         return secureRandomInitThread;
     }
 
     private static void testSecureRandom() {
-        Thread thread = new Thread(() -> {
-            Crypto.getSecureRandom().nextBytes(new byte[1024]);
-        });
+        Thread thread = new Thread(() -> Crypto.getSecureRandom().nextBytes(new byte[1024]));
         thread.setDaemon(true);
         thread.start();
         try {
             thread.join(2000);
             if (thread.isAlive()) {
-                throw new RuntimeException("SecureRandom implementation too slow!!! " +
-                        "Install haveged if on linux, or set prizm.useStrongSecureRandom=false.");
+                throw new RuntimeException("SecureRandom implementation too slow!!! "
+                        + "Install haveged if on linux, or set prizm.useStrongSecureRandom=false.");
             }
-        } catch (InterruptedException ignore) {}
+        } catch (InterruptedException ignore) {
+        }
     }
 
     public static String getProcessId() {
@@ -541,6 +543,7 @@ public final class Prizm {
         runtimeMode.launchDesktopApplication();
     }
 
-    private Prizm() {} // never
+    private Prizm() {
+    } // never
 
 }

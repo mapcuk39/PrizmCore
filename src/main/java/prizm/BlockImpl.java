@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm;
 
 import prizm.AccountLedger.LedgerEvent;
@@ -56,9 +55,8 @@ final class BlockImpl implements Block {
     private volatile long generatorId;
     private volatile byte[] bytes = null;
 
-
     BlockImpl(int version, int timestamp, long previousBlockId, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
-              byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, List<TransactionImpl> transactions, String secretPhrase) {
+            byte[] generatorPublicKey, byte[] generationSignature, byte[] previousBlockHash, List<TransactionImpl> transactions, String secretPhrase) {
         this(version, timestamp, previousBlockId, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                 generatorPublicKey, generationSignature, null, previousBlockHash, transactions);
         blockSignature = Crypto.sign(bytes(), secretPhrase);
@@ -66,7 +64,7 @@ final class BlockImpl implements Block {
     }
 
     BlockImpl(int version, int timestamp, long previousBlockId, long totalAmountNQT, long totalFeeNQT, int payloadLength, byte[] payloadHash,
-              byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, List<TransactionImpl> transactions) {
+            byte[] generatorPublicKey, byte[] generationSignature, byte[] blockSignature, byte[] previousBlockHash, List<TransactionImpl> transactions) {
         this.version = version;
         this.timestamp = timestamp;
         this.previousBlockId = previousBlockId;
@@ -84,9 +82,9 @@ final class BlockImpl implements Block {
     }
 
     BlockImpl(int version, int timestamp, long previousBlockId, long totalAmountNQT, long totalFeeNQT, int payloadLength,
-              byte[] payloadHash, long generatorId, byte[] generationSignature, byte[] blockSignature,
-              byte[] previousBlockHash, BigInteger cumulativeDifficulty, long baseTarget, long nextBlockId, int height, long id,
-              List<TransactionImpl> blockTransactions) {
+            byte[] payloadHash, long generatorId, byte[] generationSignature, byte[] blockSignature,
+            byte[] previousBlockHash, BigInteger cumulativeDifficulty, long baseTarget, long nextBlockId, int height, long id,
+            List<TransactionImpl> blockTransactions) {
         this(version, timestamp, previousBlockId, totalAmountNQT, totalFeeNQT, payloadLength, payloadHash,
                 null, generationSignature, blockSignature, previousBlockHash, null);
         this.cumulativeDifficulty = cumulativeDifficulty;
@@ -202,7 +200,7 @@ final class BlockImpl implements Block {
                 throw new IllegalStateException("Block is not signed yet");
             }
             byte[] hash = Crypto.sha256().digest(bytes());
-            BigInteger bigInteger = new BigInteger(1, new byte[] {hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
+            BigInteger bigInteger = new BigInteger(1, new byte[]{hash[7], hash[6], hash[5], hash[4], hash[3], hash[2], hash[1], hash[0]});
             id = bigInteger.longValue();
             stringId = bigInteger.toString();
         }
@@ -230,12 +228,12 @@ final class BlockImpl implements Block {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof BlockImpl && this.getId() == ((BlockImpl)o).getId();
+        return o instanceof BlockImpl && this.getId() == ((BlockImpl) o).getId();
     }
 
     @Override
     public int hashCode() {
-        return (int)(getId() ^ (getId() >>> 32));
+        return (int) (getId() ^ (getId() >>> 32));
     }
 
     @Override
@@ -283,7 +281,7 @@ final class BlockImpl implements Block {
                 throw new PrizmException.NotValidException("Invalid block signature");
             }
             return block;
-        } catch (PrizmException.NotValidException|RuntimeException e) {
+        } catch (PrizmException.NotValidException | RuntimeException e) {
             Logger.logDebugMessage("Failed to parse block: " + blockData.toJSONString());
             throw e;
         }
@@ -331,7 +329,7 @@ final class BlockImpl implements Block {
     private volatile boolean hasValidSignature = false;
 
     private boolean checkSignature() {
-        if (! hasValidSignature) {
+        if (!hasValidSignature) {
             byte[] data = Arrays.copyOf(bytes(), bytes.length - 64);
             hasValidSignature = blockSignature != null && Crypto.verify(blockSignature, data, getGeneratorPublicKey(), version >= 3);
         }
@@ -339,22 +337,36 @@ final class BlockImpl implements Block {
     }
 
     boolean verifyGenerationSignature() throws BlockchainProcessor.BlockOutOfOrderException {
-
         try {
-
             BlockImpl previousBlock = BlockchainImpl.getInstance().getBlock(getPreviousBlockId());
             if (previousBlock == null) {
                 throw new BlockchainProcessor.BlockOutOfOrderException("Can't verify signature because previous block is missing", this);
             }
-
-            if (version == 1 && !Crypto.verify(generationSignature, previousBlock.generationSignature, getGeneratorPublicKey(), version >= 3)) {
+            if (version == 1 && !Crypto.verify(generationSignature, previousBlock.generationSignature, getGeneratorPublicKey(), version >= 3)) {  ///// bilo false
+                Logger.logDebugMessage("Refused block " + height + " because of wrong signature");
                 return false;
             }
-
             Account account = Account.getAccount(getGeneratorId());
             long effectiveBalance = account == null ? 0 : account.getEffectiveBalancePrizm();
             if (effectiveBalance <= 0) {
+                Logger.logDebugMessage("Refused block " + height + " because of zero effective balance");
                 return false;
+            }
+            
+            int currentHeight = BlockchainImpl.getInstance().getHeight();
+            
+            if (ParaExcludes.check(getGeneratorId(), currentHeight)) {
+                Logger.logDebugMessage("Refused block " + height + " because it is excluded");
+                return false;
+            }
+
+            if (getTransactions() != null && !getTransactions().isEmpty()) {
+                for (TransactionImpl trx : getTransactions()) {
+                    if (ParaExcludes.check(trx.getSenderId(), currentHeight)) {
+                        Logger.logDebugMessage("Refused block " + height + " because it's transaction is excluded");
+                        return false;
+                    }
+                }
             }
 
             MessageDigest digest = Crypto.sha256();
@@ -365,27 +377,28 @@ final class BlockImpl implements Block {
                 digest.update(previousBlock.generationSignature);
                 generationSignatureHash = digest.digest(getGeneratorPublicKey());
                 if (!Arrays.equals(generationSignature, generationSignatureHash)) {
+                    Logger.logDebugMessage("Refused block " + height + " because of wrong generation signature");
                     return false;
                 }
             }
 
             BigInteger hit = new BigInteger(1, new byte[]{generationSignatureHash[7], generationSignatureHash[6], generationSignatureHash[5], generationSignatureHash[4], generationSignatureHash[3], generationSignatureHash[2], generationSignatureHash[1], generationSignatureHash[0]});
-
-            return Generator.verifyHit(hit, BigInteger.valueOf(effectiveBalance), previousBlock, timestamp)
+            final boolean verified = Generator.verifyHit(hit, BigInteger.valueOf(effectiveBalance), previousBlock, timestamp)
                     || (this.height < Constants.TRANSPARENT_FORGING_BLOCK_5 && Arrays.binarySearch(badBlocks, this.getId()) >= 0);
-
+            if (!verified)
+                Logger.logDebugMessage("Refused block "+ height +" because of failed verify hit");
+            return verified;
         } catch (RuntimeException e) {
 
             Logger.logMessage("Error verifying block generation signature", e);
             return false;
-
         }
-
     }
 
-    private static final long[] badBlocks = new long[] {
-            1000000000000000000L, 2000000000000000000L, 3000000000000000000L, -400000000000000000L, -5000000000000000000L,
-            -6000000000000000000L, 7000000000000000000L, 8000000000000000000L, -9000000000000000000L};
+    private static final long[] badBlocks = new long[]{
+        1000000000000000000L, 2000000000000000000L, 3000000000000000000L, -400000000000000000L, -5000000000000000000L,
+        -6000000000000000000L, 7000000000000000000L, 8000000000000000000L, -9000000000000000000L};
+
     static {
         Arrays.sort(badBlocks);
     }
@@ -393,31 +406,8 @@ final class BlockImpl implements Block {
     void apply() {
         Account generatorAccount = Account.addOrGetAccount(getGeneratorId());
         generatorAccount.apply(getGeneratorPublicKey());
-        long totalBackFees = 0;
-        if (this.height > Constants.SHUFFLING_BLOCK) {
-            long[] backFees = new long[3];
-            for (TransactionImpl transaction : getTransactions()) {
-                long[] fees = transaction.getBackFees();
-                for (int i = 0; i < fees.length; i++) {
-                    backFees[i] += fees[i];
-                }
-            }
-            for (int i = 0; i < backFees.length; i++) {
-                if (backFees[i] == 0) {
-                    break;
-                }
-                totalBackFees += backFees[i];
-                Account previousGeneratorAccount = Account.getAccount(BlockDb.findBlockAtHeight(this.height - i - 1).getGeneratorId());
-                Logger.logDebugMessage("Back fees %f coins to forger at height %d", ((double)backFees[i])/Constants.ONE_PRIZM, this.height - i - 1);
-                previousGeneratorAccount.addToBalanceAndUnconfirmedBalanceNQT(LedgerEvent.BLOCK_GENERATED, getId(), backFees[i]);
-                previousGeneratorAccount.addToForgedBalanceNQT(backFees[i]);
-            }
-        }
-        if (totalBackFees != 0) {
-            Logger.logDebugMessage("Fee reduced by %f coins at height %d", ((double)totalBackFees)/Constants.ONE_PRIZM, this.height);
-        }
-        generatorAccount.addToBalanceAndUnconfirmedBalanceNQT(LedgerEvent.BLOCK_GENERATED, getId(), totalFeeNQT - totalBackFees);
-        generatorAccount.addToForgedBalanceNQT(totalFeeNQT - totalBackFees);
+        generatorAccount.addToBalanceAndUnconfirmedBalanceNQT(LedgerEvent.BLOCK_GENERATED, getId(), totalFeeNQT);
+        generatorAccount.addToForgedBalanceNQT(totalFeeNQT);
     }
 
     void setPrevious(BlockImpl block) {
@@ -447,7 +437,7 @@ final class BlockImpl implements Block {
 
     private void calculateBaseTarget(BlockImpl previousBlock) {
         long prevBaseTarget = previousBlock.baseTarget;
-        if (previousBlock.getHeight() < Constants.SHUFFLING_BLOCK) {
+        if (previousBlock.getHeight() < Constants.TRANSPARENT_FORGING_BLOCK_5) {//  Constants.SHUFFLING_BLOCK) {
             baseTarget = BigInteger.valueOf(prevBaseTarget)
                     .multiply(BigInteger.valueOf(this.timestamp - previousBlock.timestamp))
                     .divide(BigInteger.valueOf(60)).longValue();

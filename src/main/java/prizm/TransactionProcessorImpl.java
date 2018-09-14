@@ -22,12 +22,7 @@ import prizm.db.DbKey;
 import prizm.db.EntityDbTable;
 import prizm.peer.Peer;
 import prizm.peer.Peers;
-import prizm.util.Convert;
-import prizm.util.JSON;
-import prizm.util.Listener;
-import prizm.util.Listeners;
-import prizm.util.Logger;
-import prizm.util.ThreadPool;
+import prizm.util.*;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
@@ -35,19 +30,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class TransactionProcessorImpl implements TransactionProcessor {
@@ -87,8 +70,8 @@ final class TransactionProcessorImpl implements TransactionProcessor {
 
         @Override
         protected void save(Connection con, UnconfirmedTransaction unconfirmedTransaction) throws SQLException {
-            unconfirmedTransaction.save(con);
-            if (transactionCache.size() < maxUnconfirmedTransactions) {
+            boolean saved = unconfirmedTransaction.save(con);
+            if (saved && ((transactionCache.size() < maxUnconfirmedTransactions)) ) {
                 transactionCache.put(unconfirmedTransaction.getDbKey(), unconfirmedTransaction);
             }
         }
@@ -304,11 +287,15 @@ final class TransactionProcessorImpl implements TransactionProcessor {
 
 
     private TransactionProcessorImpl() {
+        if (!Constants.isLightClient) {
+            if (!Constants.isOffline) {
         ThreadPool.scheduleThread("ProcessTransactions", processTransactionsThread, 5);
-        ThreadPool.scheduleThread("RemoveUnconfirmedTransactions", removeUnconfirmedTransactionsThread, 20);
-        ThreadPool.scheduleThread("ProcessWaitingTransactions", processWaitingTransactionsThread, 1);
         ThreadPool.runAfterStart(this::rebroadcastAllUnconfirmedTransactions);
         ThreadPool.scheduleThread("RebroadcastTransactions", rebroadcastTransactionsThread, 23);
+            }
+            ThreadPool.scheduleThread("RemoveUnconfirmedTransactions", removeUnconfirmedTransactionsThread, 20);
+            ThreadPool.scheduleThread("ProcessWaitingTransactions", processWaitingTransactionsThread, 1);
+        }
     }
 
     @Override
@@ -331,8 +318,18 @@ final class TransactionProcessorImpl implements TransactionProcessor {
     }
 
     @Override
+    public DbIterator<UnconfirmedTransaction> getAllUnconfirmedTransactions(int from, int to) {
+        return unconfirmedTransactionTable.getAll(from, to);
+    }
+
+    @Override
     public DbIterator<UnconfirmedTransaction> getAllUnconfirmedTransactions(String sort) {
         return unconfirmedTransactionTable.getAll(0, -1, sort);
+    }
+
+    @Override
+    public DbIterator<UnconfirmedTransaction> getAllUnconfirmedTransactions(int from, int to, String sort) {
+        return unconfirmedTransactionTable.getAll(from, to, sort);
     }
 
     @Override
@@ -398,6 +395,13 @@ final class TransactionProcessorImpl implements TransactionProcessor {
     @Override
     public void broadcast(Transaction transaction) throws PrizmException.ValidationException {
         BlockchainImpl.getInstance().writeLock();
+        int height = BlockchainImpl.getInstance().getHeight();
+
+        if (transaction.getSenderId() == transaction.getRecipientId()) {
+            Logger.logMessage("Transaction " + transaction.getStringId() + " to self: " + transaction.getSenderId());
+            BlockchainImpl.getInstance().writeUnlock();
+            return;
+        }
         try {
             if (TransactionDb.hasTransaction(transaction.getId())) {
                 Logger.logMessage("Transaction " + transaction.getStringId() + " already in blockchain, will not broadcast again");
@@ -563,8 +567,18 @@ final class TransactionProcessorImpl implements TransactionProcessor {
         BlockchainImpl.getInstance().writeLock();
         try {
             for (Transaction transaction : transactions) {
+                BlockDb.transactionCache.remove(transaction.getId());
+                if (TransactionDb.hasTransaction(transaction.getId())) {
+                    continue;
+                }
                 ((TransactionImpl)transaction).unsetBlock();
-                waitingTransactions.add(new UnconfirmedTransaction((TransactionImpl)transaction, Math.min(currentTime, Convert.fromEpochTime(transaction.getTimestamp()))));
+                try {
+                    ParaBlock.Transaction trx = ParaEngine.convert((TransactionImpl)transaction);
+                    if (trx.getSender() == Genesis.CREATOR_ID && !Prizm.para().canReceive(trx)) continue;
+                    waitingTransactions.add(new UnconfirmedTransaction((TransactionImpl)transaction, Math.min(currentTime, Convert.fromEpochTime(transaction.getTimestamp()))));
+                } catch (ParaMiningException ex) {
+                    continue;
+                }
             }
         } finally {
             BlockchainImpl.getInstance().writeUnlock();
@@ -581,6 +595,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
                 while (iterator.hasNext()) {
                     UnconfirmedTransaction unconfirmedTransaction = iterator.next();
                     try {
+                        unconfirmedTransaction.validate();
                         processTransaction(unconfirmedTransaction);
                         iterator.remove();
                         addedUnconfirmedTransactions.add(unconfirmedTransaction.getTransaction());
@@ -604,7 +619,7 @@ final class TransactionProcessorImpl implements TransactionProcessor {
         }
     }
 
-    // [PARA CHECK PEER]
+    // [PARA CHECK PEER] Transactions from peers.
     
     private void processPeerTransactions(JSONArray transactionsData) throws PrizmException.NotValidException {
         if (Prizm.getBlockchain().getHeight() <= Constants.LAST_KNOWN_BLOCK && !testUnconfirmedTransactions) {
@@ -621,9 +636,23 @@ final class TransactionProcessorImpl implements TransactionProcessor {
         for (Object transactionData : transactionsData) {
             try {
                 TransactionImpl transaction = TransactionImpl.parseTransaction((JSONObject) transactionData);
+
+                TransactionImpl trxn = BlockchainImpl.getInstance().getTransaction(transaction.getId());
+
+                if (trxn != null && trxn.getHeight() != transaction.getHeight()) continue;
+
+                if (transaction.getType().getType() > 1 && BlockchainImpl.getInstance().getHeight() > Constants.CONTROL_TRX_TO_ORDINARY)
+                    continue;
+
                 if (transaction.getSenderId() == Genesis.CREATOR_ID) {
-                    ParaBlock.Transaction transactionForCheck = ParaEngine.convert(transaction);
-                    if (!Prizm.para().canReceive(transactionForCheck)) continue;
+                    continue;
+                } else {
+                    if (transaction.getAmountNQT() < 0l) {
+                        continue;
+                    }
+                    if (transaction.getFeeNQT() < Prizm.para().getFixedFee(transaction.getAmountNQT())) {
+                        continue;
+                    }
                 }
                 receivedTransactions.add(transaction);
                 if (getUnconfirmedTransaction(transaction.getDbKey()) != null || TransactionDb.hasTransaction(transaction.getId())) {
@@ -644,7 +673,6 @@ final class TransactionProcessorImpl implements TransactionProcessor {
             } catch (PrizmException.ValidationException|RuntimeException e) {
                 Logger.logDebugMessage(String.format("Invalid transaction from peer: %s", ((JSONObject) transactionData).toJSONString()), e);
                 exceptions.add(e);
-            } catch (ParaMiningException ex) {
             }
         }
         if (sendToPeersTransactions.size() > 0) {
@@ -662,6 +690,9 @@ final class TransactionProcessorImpl implements TransactionProcessor {
     private void processTransaction(UnconfirmedTransaction unconfirmedTransaction) throws PrizmException.ValidationException {
         TransactionImpl transaction = unconfirmedTransaction.getTransaction();
         int curTime = Prizm.getEpochTime();
+        if  (!UnconfirmedTransaction.transactionBytesIsValid(transaction.getBytes())) {
+            throw new PrizmException.NotValidException("Invalid transaction bytes");
+        }
         if (transaction.getTimestamp() > curTime + Constants.MAX_TIMEDRIFT || transaction.getExpiration() < curTime) {
             throw new PrizmException.NotCurrentlyValidException("Invalid transaction timestamp");
         }
@@ -671,7 +702,6 @@ final class TransactionProcessorImpl implements TransactionProcessor {
         if (transaction.getId() == 0L) {
             throw new PrizmException.NotValidException("Invalid transaction id 0");
         }
-
         BlockchainImpl.getInstance().writeLock();
         try {
             try {

@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.tools;
 
 import prizm.Prizm;
@@ -57,7 +56,7 @@ public final class SignTransactions {
             }
             int n = 0;
             try (BufferedReader reader = new BufferedReader(new FileReader(unsigned));
-                 BufferedWriter writer = new BufferedWriter(new FileWriter(signed))) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(signed))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
                     byte[] transactionBytes = Convert.parseHexString(line);

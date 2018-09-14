@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import prizm.util.Convert;
 
 class UnconfirmedTransaction implements Transaction {
 
@@ -57,12 +58,24 @@ class UnconfirmedTransaction implements Transaction {
             throw new RuntimeException(e.toString(), e);
         }
     }
+    
+    public static final boolean transactionBytesIsValid(byte bytes[]) {
+        if (bytes == null || bytes.length <= 0) return false;
+        try {
+            Prizm.newTransactionBuilder(bytes, null);
+        } catch (PrizmException.NotValidException ex) {
+            return false;
+        }
+        return true;
+    }
 
-    void save(Connection con) throws SQLException {
+    boolean save(Connection con) throws SQLException {
+        if (!transactionBytesIsValid(transaction.bytes())) return false;
         try (PreparedStatement pstmt = con.prepareStatement("INSERT INTO unconfirmed_transaction (id, transaction_height, "
                 + "fee_per_byte, expiration, transaction_bytes, prunable_json, arrival_timestamp, height) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
             int i = 0;
+            
             pstmt.setLong(++i, transaction.getId());
             pstmt.setInt(++i, transaction.getHeight());
             pstmt.setLong(++i, feePerByte);
@@ -78,6 +91,7 @@ class UnconfirmedTransaction implements Transaction {
             pstmt.setInt(++i, Prizm.getBlockchain().getHeight());
             pstmt.executeUpdate();
         }
+        return true;
     }
 
     TransactionImpl getTransaction() {
@@ -263,11 +277,6 @@ class UnconfirmedTransaction implements Transaction {
 
     public Appendix.EncryptToSelfMessage getEncryptToSelfMessage() {
         return transaction.getEncryptToSelfMessage();
-    }
-
-    @Override
-    public Appendix.Phasing getPhasing() {
-        return transaction.getPhasing();
     }
 
     @Override

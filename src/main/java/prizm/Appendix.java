@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,43 +12,46 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm;
 
-import prizm.AccountLedger.LedgerEvent;
 import prizm.crypto.Crypto;
 import prizm.crypto.EncryptedData;
 import prizm.util.Convert;
-import prizm.util.Logger;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 public interface Appendix {
 
     int getSize();
+
     int getFullSize();
+
     void putBytes(ByteBuffer buffer);
+
     JSONObject getJSONObject();
+
     byte getVersion();
+
     int getBaselineFeeHeight();
+
     Fee getBaselineFee(Transaction transaction);
+
     int getNextFeeHeight();
+
     Fee getNextFee(Transaction transaction);
-    boolean isPhased(Transaction transaction);
 
     interface Prunable {
+
         byte[] getHash();
+
         boolean hasPrunableData();
+
         void restorePrunableData(Transaction transaction, int blockTimestamp, int height);
+
         default boolean shouldLoadPrunable(Transaction transaction, boolean includeExpiredPrunable) {
             return Prizm.getEpochTime() - transaction.getTimestamp() <
                     (includeExpiredPrunable && Constants.INCLUDE_EXPIRED_PRUNABLE ?
@@ -57,9 +60,9 @@ public interface Appendix {
     }
 
     interface Encryptable {
+
         void encrypt(String secretPhrase);
     }
-
 
     abstract class AbstractAppendix implements Appendix {
 
@@ -130,12 +133,12 @@ public interface Appendix {
         }
 
         boolean verifyVersion(byte transactionVersion) {
-            return transactionVersion == 0 ? version == 0 : version > 0;
+            return transactionVersion == 0 ? version == 0 : version == 1;
         }
 
         @Override
         public int getBaselineFeeHeight() {
-            return Constants.SHUFFLING_BLOCK;
+            return 0;
         }
 
         @Override
@@ -155,28 +158,14 @@ public interface Appendix {
 
         abstract void validate(Transaction transaction) throws PrizmException.ValidationException;
 
-        void validateAtFinish(Transaction transaction) throws PrizmException.ValidationException {
-            if (!isPhased(transaction)) {
-                return;
-            }
-            validate(transaction);
-        }
-
         abstract void apply(Transaction transaction, Account senderAccount, Account recipientAccount);
 
         final void loadPrunable(Transaction transaction) {
             loadPrunable(transaction, false);
         }
 
-        void loadPrunable(Transaction transaction, boolean includeExpiredPrunable) {}
-
-        abstract boolean isPhasable();
-
-        @Override
-        public final boolean isPhased(Transaction transaction) {
-            return isPhasable() && transaction.getPhasing() != null;
+        void loadPrunable(Transaction transaction, boolean includeExpiredPrunable) {
         }
-
     }
 
     static boolean hasAppendix(String appendixName, JSONObject attachmentData) {
@@ -197,7 +186,7 @@ public interface Appendix {
         private static final Fee MESSAGE_FEE = new Fee.SizeBasedFee(0, Constants.ONE_PRIZM, 32) {
             @Override
             public int getSize(TransactionImpl transaction, Appendix appendage) {
-                return ((Message)appendage).getMessage().length;
+                return ((Message) appendage).getMessage().length;
             }
         };
 
@@ -223,7 +212,7 @@ public interface Appendix {
 
         Message(JSONObject attachmentData) {
             super(attachmentData);
-            String messageString = (String)attachmentData.get("message");
+            String messageString = (String) attachmentData.get("message");
             this.isText = Boolean.TRUE.equals(attachmentData.get("messageIsText"));
             this.message = isText ? Convert.toBytes(messageString) : Convert.parseHexString(messageString);
         }
@@ -240,7 +229,7 @@ public interface Appendix {
             this(isText ? Convert.toBytes(string) : Convert.parseHexString(string), isText);
         }
 
-        private Message(byte[] message, boolean isText) {
+        public Message(byte[] message, boolean isText) {
             this.message = message;
             this.isText = isText;
         }
@@ -274,13 +263,14 @@ public interface Appendix {
 
         @Override
         void validate(Transaction transaction) throws PrizmException.ValidationException {
-            if (Prizm.getBlockchain().getHeight() > Constants.SHUFFLING_BLOCK && message.length > Constants.MAX_ARBITRARY_MESSAGE_LENGTH) {
+            if (message.length > Constants.MAX_ARBITRARY_MESSAGE_LENGTH) {
                 throw new PrizmException.NotValidException("Invalid arbitrary message length: " + message.length);
             }
         }
 
         @Override
-        void apply(Transaction transaction, Account senderAccount, Account recipientAccount) {}
+        void apply(Transaction transaction, Account senderAccount, Account recipientAccount) {
+        }
 
         public byte[] getMessage() {
             return message;
@@ -289,19 +279,13 @@ public interface Appendix {
         public boolean isText() {
             return isText;
         }
-
-        @Override
-        boolean isPhasable() {
-            return false;
-        }
-
     }
 
     class PrunablePlainMessage extends Appendix.AbstractAppendix implements Prunable {
 
         private static final String appendixName = "PrunablePlainMessage";
 
-        private static final Fee PRUNABLE_MESSAGE_FEE = new Fee.SizeBasedFee(Constants.ONE_PRIZM/10) {
+        private static final Fee PRUNABLE_MESSAGE_FEE = new Fee.SizeBasedFee(Constants.ONE_PRIZM / 10) {
             @Override
             public int getSize(TransactionImpl transaction, Appendix appendix) {
                 return appendix.getFullSize();
@@ -355,7 +339,7 @@ public interface Appendix {
             this(Convert.toBytes(string, isText), isText);
         }
 
-        private PrunablePlainMessage(byte[] message, boolean isText) {
+        public PrunablePlainMessage(byte[] message, boolean isText) {
             this.message = message;
             this.isText = isText;
             this.hash = null;
@@ -415,7 +399,7 @@ public interface Appendix {
         @Override
         void apply(Transaction transaction, Account senderAccount, Account recipientAccount) {
             if (Prizm.getEpochTime() - transaction.getTimestamp() < Constants.MAX_PRUNABLE_LIFETIME) {
-                PrunableMessage.add((TransactionImpl)transaction, this);
+                PrunableMessage.add((TransactionImpl) transaction, this);
             }
         }
 
@@ -439,7 +423,7 @@ public interface Appendix {
                 return hash;
             }
             MessageDigest digest = Crypto.sha256();
-            digest.update((byte)(isText ? 1 : 0));
+            digest.update((byte) (isText ? 1 : 0));
             digest.update(message);
             return digest.digest();
         }
@@ -455,18 +439,13 @@ public interface Appendix {
         }
 
         @Override
-        boolean isPhasable() {
-            return false;
-        }
-
-        @Override
         public final boolean hasPrunableData() {
             return (prunableMessage != null || message != null);
         }
 
         @Override
         public void restorePrunableData(Transaction transaction, int blockTimestamp, int height) {
-            PrunableMessage.add((TransactionImpl)transaction, this, blockTimestamp, height);
+            PrunableMessage.add((TransactionImpl) transaction, this, blockTimestamp, height);
         }
     }
 
@@ -475,7 +454,7 @@ public interface Appendix {
         private static final Fee ENCRYPTED_MESSAGE_FEE = new Fee.SizeBasedFee(Constants.ONE_PRIZM, Constants.ONE_PRIZM, 32) {
             @Override
             public int getSize(TransactionImpl transaction, Appendix appendage) {
-                return ((AbstractEncryptedMessage)appendage).getEncryptedDataLength() - 16;
+                return ((AbstractEncryptedMessage) appendage).getEncryptedDataLength() - 16;
             }
         };
 
@@ -496,7 +475,7 @@ public interface Appendix {
 
         private AbstractEncryptedMessage(JSONObject attachmentJSON, JSONObject encryptedMessageJSON) {
             super(attachmentJSON);
-            byte[] data = Convert.parseHexString((String)encryptedMessageJSON.get("data"));
+            byte[] data = Convert.parseHexString((String) encryptedMessageJSON.get("data"));
             byte[] nonce = Convert.parseHexString((String) encryptedMessageJSON.get("nonce"));
             this.encryptedData = new EncryptedData(data, nonce);
             this.isText = Boolean.TRUE.equals(encryptedMessageJSON.get("isText"));
@@ -538,7 +517,8 @@ public interface Appendix {
 
         @Override
         void validate(Transaction transaction) throws PrizmException.ValidationException {
-            if (Prizm.getBlockchain().getHeight() > Constants.SHUFFLING_BLOCK && getEncryptedDataLength() > Constants.MAX_ENCRYPTED_MESSAGE_LENGTH) {
+//ss            if (Prizm.getBlockchain().getHeight() > Constants.SHUFFLING_BLOCK && getEncryptedDataLength() > Constants.MAX_ENCRYPTED_MESSAGE_LENGTH) {
+            if (Prizm.getBlockchain().getHeight() > Constants.ADVANCED_MESSAGING_VALIDATION && getEncryptedDataLength() > Constants.MAX_ENCRYPTED_MESSAGE_LENGTH) {
                 throw new PrizmException.NotValidException("Max encrypted message length exceeded");
             }
             if (encryptedData != null) {
@@ -550,6 +530,11 @@ public interface Appendix {
             if ((getVersion() != 2 && !isCompressed) || (getVersion() == 2 && isCompressed)) {
                 throw new PrizmException.NotValidException("Version mismatch - version " + getVersion() + ", isCompressed " + isCompressed);
             }
+        }
+
+        @Override
+        final boolean verifyVersion(byte transactionVersion) {
+            return transactionVersion == 0 ? getVersion() == 0 : (getVersion() == 1 || getVersion() == 2);
         }
 
         @Override
@@ -574,19 +559,13 @@ public interface Appendix {
         public final boolean isCompressed() {
             return isCompressed;
         }
-
-        @Override
-        final boolean isPhasable() {
-            return false;
-        }
-
     }
 
     class PrunableEncryptedMessage extends AbstractAppendix implements Prunable {
 
         private static final String appendixName = "PrunableEncryptedMessage";
 
-        private static final Fee PRUNABLE_ENCRYPTED_DATA_FEE = new Fee.SizeBasedFee(Constants.ONE_PRIZM/10) {
+        private static final Fee PRUNABLE_ENCRYPTED_DATA_FEE = new Fee.SizeBasedFee(Constants.ONE_PRIZM / 10) {
             @Override
             public int getSize(TransactionImpl transaction, Appendix appendix) {
                 return appendix.getFullSize();
@@ -597,7 +576,7 @@ public interface Appendix {
             if (!hasAppendix(appendixName, attachmentData)) {
                 return null;
             }
-            JSONObject encryptedMessageJSON = (JSONObject)attachmentData.get("encryptedMessage");
+            JSONObject encryptedMessageJSON = (JSONObject) attachmentData.get("encryptedMessage");
             if (encryptedMessageJSON != null && encryptedMessageJSON.get("data") == null) {
                 return new UnencryptedPrunableEncryptedMessage(attachmentData);
             }
@@ -717,7 +696,7 @@ public interface Appendix {
         @Override
         void apply(Transaction transaction, Account senderAccount, Account recipientAccount) {
             if (Prizm.getEpochTime() - transaction.getTimestamp() < Constants.MAX_PRUNABLE_LIFETIME) {
-                PrunableMessage.add((TransactionImpl)transaction, this);
+                PrunableMessage.add((TransactionImpl) transaction, this);
             }
         }
 
@@ -756,8 +735,8 @@ public interface Appendix {
                 return hash;
             }
             MessageDigest digest = Crypto.sha256();
-            digest.update((byte)(isText ? 1 : 0));
-            digest.update((byte)(isCompressed ? 1 : 0));
+            digest.update((byte) (isText ? 1 : 0));
+            digest.update((byte) (isCompressed ? 1 : 0));
             digest.update(encryptedData.getData());
             digest.update(encryptedData.getNonce());
             return digest.digest();
@@ -774,18 +753,13 @@ public interface Appendix {
         }
 
         @Override
-        final boolean isPhasable() {
-            return false;
-        }
-
-        @Override
         public final boolean hasPrunableData() {
             return (prunableMessage != null || encryptedData != null);
         }
 
         @Override
         public void restorePrunableData(Transaction transaction, int blockTimestamp, int height) {
-            PrunableMessage.add((TransactionImpl)transaction, this, blockTimestamp, height);
+            PrunableMessage.add((TransactionImpl) transaction, this, blockTimestamp, height);
         }
     }
 
@@ -797,10 +771,10 @@ public interface Appendix {
         private UnencryptedPrunableEncryptedMessage(JSONObject attachmentJSON) {
             super(attachmentJSON);
             setEncryptedData(null);
-            JSONObject encryptedMessageJSON = (JSONObject)attachmentJSON.get("encryptedMessage");
-            String messageToEncryptString = (String)encryptedMessageJSON.get("messageToEncrypt");
+            JSONObject encryptedMessageJSON = (JSONObject) attachmentJSON.get("encryptedMessage");
+            String messageToEncryptString = (String) encryptedMessageJSON.get("messageToEncrypt");
             this.messageToEncrypt = isText() ? Convert.toBytes(messageToEncryptString) : Convert.parseHexString(messageToEncryptString);
-            this.recipientPublicKey = Convert.parseHexString((String)attachmentJSON.get("recipientPublicKey"));
+            this.recipientPublicKey = Convert.parseHexString((String) attachmentJSON.get("recipientPublicKey"));
         }
 
         public UnencryptedPrunableEncryptedMessage(byte[] messageToEncrypt, boolean isText, boolean isCompressed, byte[] recipientPublicKey) {
@@ -853,7 +827,8 @@ public interface Appendix {
         }
 
         @Override
-        void loadPrunable(Transaction transaction, boolean includeExpiredPrunable) {}
+        void loadPrunable(Transaction transaction, boolean includeExpiredPrunable) {
+        }
 
         @Override
         public void encrypt(String secretPhrase) {
@@ -879,7 +854,7 @@ public interface Appendix {
             if (!hasAppendix(appendixName, attachmentData)) {
                 return null;
             }
-            if (((JSONObject)attachmentData.get("encryptedMessage")).get("data") == null) {
+            if (((JSONObject) attachmentData.get("encryptedMessage")).get("data") == null) {
                 return new UnencryptedEncryptedMessage(attachmentData);
             }
             return new EncryptedMessage(attachmentData);
@@ -890,7 +865,7 @@ public interface Appendix {
         }
 
         EncryptedMessage(JSONObject attachmentData) {
-            super(attachmentData, (JSONObject)attachmentData.get("encryptedMessage"));
+            super(attachmentData, (JSONObject) attachmentData.get("encryptedMessage"));
         }
 
         public EncryptedMessage(EncryptedData encryptedData, boolean isText, boolean isCompressed) {
@@ -927,10 +902,10 @@ public interface Appendix {
         UnencryptedEncryptedMessage(JSONObject attachmentData) {
             super(attachmentData);
             setEncryptedData(null);
-            JSONObject encryptedMessageJSON = (JSONObject)attachmentData.get("encryptedMessage");
-            String messageToEncryptString = (String)encryptedMessageJSON.get("messageToEncrypt");
+            JSONObject encryptedMessageJSON = (JSONObject) attachmentData.get("encryptedMessage");
+            String messageToEncryptString = (String) encryptedMessageJSON.get("messageToEncrypt");
             messageToEncrypt = isText() ? Convert.toBytes(messageToEncryptString) : Convert.parseHexString(messageToEncryptString);
-            recipientPublicKey = Convert.parseHexString((String)attachmentData.get("recipientPublicKey"));
+            recipientPublicKey = Convert.parseHexString((String) attachmentData.get("recipientPublicKey"));
         }
 
         public UnencryptedEncryptedMessage(byte[] messageToEncrypt, boolean isText, boolean isCompressed, byte[] recipientPublicKey) {
@@ -1001,7 +976,7 @@ public interface Appendix {
             if (!hasAppendix(appendixName, attachmentData)) {
                 return null;
             }
-            if (((JSONObject)attachmentData.get("encryptToSelfMessage")).get("data") == null) {
+            if (((JSONObject) attachmentData.get("encryptToSelfMessage")).get("data") == null) {
                 return new UnencryptedEncryptToSelfMessage(attachmentData);
             }
             return new EncryptToSelfMessage(attachmentData);
@@ -1012,7 +987,7 @@ public interface Appendix {
         }
 
         EncryptToSelfMessage(JSONObject attachmentData) {
-            super(attachmentData, (JSONObject)attachmentData.get("encryptToSelfMessage"));
+            super(attachmentData, (JSONObject) attachmentData.get("encryptToSelfMessage"));
         }
 
         public EncryptToSelfMessage(EncryptedData encryptedData, boolean isText, boolean isCompressed) {
@@ -1040,8 +1015,8 @@ public interface Appendix {
         UnencryptedEncryptToSelfMessage(JSONObject attachmentData) {
             super(attachmentData);
             setEncryptedData(null);
-            JSONObject encryptedMessageJSON = (JSONObject)attachmentData.get("encryptToSelfMessage");
-            String messageToEncryptString = (String)encryptedMessageJSON.get("messageToEncrypt");
+            JSONObject encryptedMessageJSON = (JSONObject) attachmentData.get("encryptToSelfMessage");
+            String messageToEncryptString = (String) encryptedMessageJSON.get("messageToEncrypt");
             messageToEncrypt = isText() ? Convert.toBytes(messageToEncryptString) : Convert.parseHexString(messageToEncryptString);
         }
 
@@ -1124,7 +1099,7 @@ public interface Appendix {
 
         PublicKeyAnnouncement(JSONObject attachmentData) {
             super(attachmentData);
-            this.publicKey = Convert.parseHexString((String)attachmentData.get("recipientPublicKey"));
+            this.publicKey = Convert.parseHexString((String) attachmentData.get("recipientPublicKey"));
         }
 
         public PublicKeyAnnouncement(byte[] publicKey) {
@@ -1164,7 +1139,7 @@ public interface Appendix {
                 throw new PrizmException.NotValidException("Announced public key does not match recipient accountId");
             }
             byte[] recipientPublicKey = Account.getPublicKey(recipientId);
-            if (recipientPublicKey != null && ! Arrays.equals(publicKey, recipientPublicKey)) {
+            if (recipientPublicKey != null && !Arrays.equals(publicKey, recipientPublicKey)) {
                 throw new PrizmException.NotCurrentlyValidException("A different public key for this account has already been announced");
             }
         }
@@ -1176,321 +1151,9 @@ public interface Appendix {
             }
         }
 
-        @Override
-        boolean isPhasable() {
-            return false;
-        }
-
         public byte[] getPublicKey() {
             return publicKey;
         }
 
-    }
-
-    final class Phasing extends AbstractAppendix {
-
-        private static final String appendixName = "Phasing";
-
-        private static final Fee PHASING_FEE = (transaction, appendage) -> {
-            long fee = 0;
-            Phasing phasing = (Phasing)appendage;
-            if (!phasing.params.getVoteWeighting().isBalanceIndependent()) {
-                fee += 20 * Constants.ONE_PRIZM;
-            } else {
-                fee += Constants.ONE_PRIZM;
-            }
-            if (phasing.hashedSecret.length > 0) {
-                fee += (1 + (phasing.hashedSecret.length - 1) / 32) * Constants.ONE_PRIZM;
-            }
-            fee += Constants.ONE_PRIZM * phasing.linkedFullHashes.length;
-            return fee;
-        };
-
-        static Phasing parse(JSONObject attachmentData) {
-            if (!hasAppendix(appendixName, attachmentData)) {
-                return null;
-            }
-            return new Phasing(attachmentData);
-        }
-
-        private final int finishHeight;
-        private final PhasingParams params;
-        private final byte[][] linkedFullHashes;
-        private final byte[] hashedSecret;
-        private final byte algorithm;
-
-        Phasing(ByteBuffer buffer, byte transactionVersion) {
-            super(buffer, transactionVersion);
-            finishHeight = buffer.getInt();
-            params = new PhasingParams(buffer);
-            
-            byte linkedFullHashesSize = buffer.get();
-            if (linkedFullHashesSize > 0) {
-                linkedFullHashes = new byte[linkedFullHashesSize][];
-                for (int i = 0; i < linkedFullHashesSize; i++) {
-                    linkedFullHashes[i] = new byte[32];
-                    buffer.get(linkedFullHashes[i]);
-                }
-            } else {
-                linkedFullHashes = Convert.EMPTY_BYTES;
-            }
-            byte hashedSecretLength = buffer.get();
-            if (hashedSecretLength > 0) {
-                hashedSecret = new byte[hashedSecretLength];
-                buffer.get(hashedSecret);
-            } else {
-                hashedSecret = Convert.EMPTY_BYTE;
-            }
-            algorithm = buffer.get();
-        }
-
-        Phasing(JSONObject attachmentData) {
-            super(attachmentData);
-            finishHeight = ((Long) attachmentData.get("phasingFinishHeight")).intValue();
-            params = new PhasingParams(attachmentData);
-            JSONArray linkedFullHashesJson = (JSONArray) attachmentData.get("phasingLinkedFullHashes");
-            if (linkedFullHashesJson != null && linkedFullHashesJson.size() > 0) {
-                linkedFullHashes = new byte[linkedFullHashesJson.size()][];
-                for (int i = 0; i < linkedFullHashes.length; i++) {
-                    linkedFullHashes[i] = Convert.parseHexString((String) linkedFullHashesJson.get(i));
-                }
-            } else {
-                linkedFullHashes = Convert.EMPTY_BYTES;
-            }
-            String hashedSecret = Convert.emptyToNull((String)attachmentData.get("phasingHashedSecret"));
-            if (hashedSecret != null) {
-                this.hashedSecret = Convert.parseHexString(hashedSecret);
-                this.algorithm = ((Long) attachmentData.get("phasingHashedSecretAlgorithm")).byteValue();
-            } else {
-                this.hashedSecret = Convert.EMPTY_BYTE;
-                this.algorithm = 0;
-            }
-        }
-
-        public Phasing(int finishHeight, PhasingParams phasingParams, byte[][] linkedFullHashes, byte[] hashedSecret, byte algorithm) {
-            this.finishHeight = finishHeight;
-            this.params = phasingParams;
-            this.linkedFullHashes = Convert.nullToEmpty(linkedFullHashes);
-            this.hashedSecret = hashedSecret != null ? hashedSecret : Convert.EMPTY_BYTE;
-            this.algorithm = algorithm;
-        }
-
-        @Override
-        String getAppendixName() {
-            return appendixName;
-        }
-
-        @Override
-        int getMySize() {
-            return 4 + params.getMySize() + 1 + 32 * linkedFullHashes.length + 1 + hashedSecret.length + 1;
-        }
-
-        @Override
-        void putMyBytes(ByteBuffer buffer) {
-            buffer.putInt(finishHeight);
-            params.putMyBytes(buffer);
-            buffer.put((byte) linkedFullHashes.length);
-            for (byte[] hash : linkedFullHashes) {
-                buffer.put(hash);
-            }
-            buffer.put((byte)hashedSecret.length);
-            buffer.put(hashedSecret);
-            buffer.put(algorithm);
-        }
-
-        @Override
-        void putMyJSON(JSONObject json) {
-            json.put("phasingFinishHeight", finishHeight);
-            params.putMyJSON(json);
-            if (linkedFullHashes.length > 0) {
-                JSONArray linkedFullHashesJson = new JSONArray();
-                for (byte[] hash : linkedFullHashes) {
-                    linkedFullHashesJson.add(Convert.toHexString(hash));
-                }
-                json.put("phasingLinkedFullHashes", linkedFullHashesJson);
-            }
-            if (hashedSecret.length > 0) {
-                json.put("phasingHashedSecret", Convert.toHexString(hashedSecret));
-                json.put("phasingHashedSecretAlgorithm", algorithm);
-            }
-        }
-
-        @Override
-        void validate(Transaction transaction) throws PrizmException.ValidationException {
-            params.validate();
-            int currentHeight = Prizm.getBlockchain().getHeight();
-            if (params.getVoteWeighting().getVotingModel() == VoteWeighting.VotingModel.TRANSACTION) {
-                if (linkedFullHashes.length == 0 || linkedFullHashes.length > Constants.MAX_PHASING_LINKED_TRANSACTIONS) {
-                    throw new PrizmException.NotValidException("Invalid number of linkedFullHashes " + linkedFullHashes.length);
-                }
-                Set<Long> linkedTransactionIds = new HashSet<>(linkedFullHashes.length);
-                for (byte[] hash : linkedFullHashes) {
-                    if (Convert.emptyToNull(hash) == null || hash.length != 32) {
-                        throw new PrizmException.NotValidException("Invalid linkedFullHash " + Convert.toHexString(hash));
-                    }
-                    if (Prizm.getBlockchain().getHeight() > Constants.SHUFFLING_BLOCK) {
-                        if (!linkedTransactionIds.add(Convert.fullHashToId(hash))) {
-                            throw new PrizmException.NotValidException("Duplicate linked transaction ids");
-                        }
-                    }
-                    TransactionImpl linkedTransaction = TransactionDb.findTransactionByFullHash(hash, currentHeight);
-                    if (linkedTransaction != null) {
-                        if (transaction.getTimestamp() - linkedTransaction.getTimestamp() > Constants.MAX_REFERENCED_TRANSACTION_TIMESPAN) {
-                            throw new PrizmException.NotValidException("Linked transaction cannot be more than 60 days older than the phased transaction");
-                        }
-                        if (linkedTransaction.getPhasing() != null) {
-                            throw new PrizmException.NotCurrentlyValidException("Cannot link to an already existing phased transaction");
-                        }
-                    }
-                }
-                if (params.getQuorum() > linkedFullHashes.length) {
-                    throw new PrizmException.NotValidException("Quorum of " + params.getQuorum() + " cannot be achieved in by-transaction voting with "
-                            + linkedFullHashes.length + " linked full hashes only");
-                }
-            } else {
-                if (linkedFullHashes.length != 0) {
-                    throw new PrizmException.NotValidException("LinkedFullHashes can only be used with VotingModel.TRANSACTION");
-                }
-            }
-
-            if (params.getVoteWeighting().getVotingModel() == VoteWeighting.VotingModel.HASH) {
-                if (params.getQuorum() != 1) {
-                    throw new PrizmException.NotValidException("Quorum must be 1 for by-hash voting");
-                }
-                if (hashedSecret.length == 0 || hashedSecret.length > Byte.MAX_VALUE) {
-                    throw new PrizmException.NotValidException("Invalid hashedSecret " + Convert.toHexString(hashedSecret));
-                }
-                if (PhasingPoll.getHashFunction(algorithm) == null) {
-                    throw new PrizmException.NotValidException("Invalid hashedSecretAlgorithm " + algorithm);
-                }
-            } else {
-                if (hashedSecret.length != 0) {
-                    throw new PrizmException.NotValidException("HashedSecret can only be used with VotingModel.HASH");
-                }
-                if (algorithm != 0) {
-                    throw new PrizmException.NotValidException("HashedSecretAlgorithm can only be used with VotingModel.HASH");
-                }
-            }
-
-            if (finishHeight <= currentHeight + (params.getVoteWeighting().acceptsVotes() ? 2 : 1)
-                    || finishHeight >= currentHeight + Constants.MAX_PHASING_DURATION) {
-                throw new PrizmException.NotCurrentlyValidException("Invalid finish height " + finishHeight);
-            }
-        }
-
-        @Override
-        void validateAtFinish(Transaction transaction) throws PrizmException.ValidationException {
-            params.getVoteWeighting().validate();
-        }
-
-        @Override
-        void apply(Transaction transaction, Account senderAccount, Account recipientAccount) {
-            PhasingPoll.addPoll(transaction, this);
-        }
-
-        @Override
-        boolean isPhasable() {
-            return false;
-        }
-
-        @Override
-        public Fee getBaselineFee(Transaction transaction) {
-            return PHASING_FEE;
-        }
-
-        private void release(TransactionImpl transaction) {
-            Account senderAccount = Account.getAccount(transaction.getSenderId());
-            Account recipientAccount = transaction.getRecipientId() == 0 ? null : Account.getAccount(transaction.getRecipientId());
-            transaction.getAppendages().forEach(appendage -> {
-                if (appendage.isPhasable()) {
-                    appendage.apply(transaction, senderAccount, recipientAccount);
-                }
-            });
-            TransactionProcessorImpl.getInstance().notifyListeners(Collections.singletonList(transaction), TransactionProcessor.Event.RELEASE_PHASED_TRANSACTION);
-            Logger.logDebugMessage("Transaction " + transaction.getStringId() + " has been released");
-        }
-
-        void reject(TransactionImpl transaction) {
-            Account senderAccount = Account.getAccount(transaction.getSenderId());
-            transaction.getType().undoAttachmentUnconfirmed(transaction, senderAccount);
-            senderAccount.addToUnconfirmedBalanceNQT(LedgerEvent.REJECT_PHASED_TRANSACTION, transaction.getId(),
-                                                     transaction.getAmountNQT());
-            TransactionProcessorImpl.getInstance()
-                    .notifyListeners(Collections.singletonList(transaction), TransactionProcessor.Event.REJECT_PHASED_TRANSACTION);
-            Logger.logDebugMessage("Transaction " + transaction.getStringId() + " has been rejected");
-        }
-
-        void countVotes(TransactionImpl transaction) {
-            if (Prizm.getBlockchain().getHeight() > Constants.SHUFFLING_BLOCK && PhasingPoll.getResult(transaction.getId()) != null) {
-                return;
-            }
-            PhasingPoll poll = PhasingPoll.getPoll(transaction.getId());
-            long result = poll.countVotes();
-            poll.finish(result);
-            if (result >= poll.getQuorum()) {
-                try {
-                    release(transaction);
-                } catch (RuntimeException e) {
-                    Logger.logErrorMessage("Failed to release phased transaction " + transaction.getJSONObject().toJSONString(), e);
-                    reject(transaction);
-                }
-            } else {
-                reject(transaction);
-            }
-        }
-
-        void tryCountVotes(TransactionImpl transaction, Map<TransactionType, Map<String, Integer>> duplicates) {
-            PhasingPoll poll = PhasingPoll.getPoll(transaction.getId());
-            long result = poll.countVotes();
-            if (result >= poll.getQuorum()) {
-                if (!transaction.attachmentIsDuplicate(duplicates, false)) {
-                    try {
-                        release(transaction);
-                        poll.finish(result);
-                        Logger.logDebugMessage("Early finish of transaction " + transaction.getStringId() + " at height " + Prizm.getBlockchain().getHeight());
-                    } catch (RuntimeException e) {
-                        Logger.logErrorMessage("Failed to release phased transaction " + transaction.getJSONObject().toJSONString(), e);
-                    }
-                } else {
-                    Logger.logDebugMessage("At height " + Prizm.getBlockchain().getHeight() + " phased transaction " + transaction.getStringId()
-                            + " is duplicate, cannot finish early");
-                }
-            } else {
-                Logger.logDebugMessage("At height " + Prizm.getBlockchain().getHeight() + " phased transaction " + transaction.getStringId()
-                        + " does not yet meet quorum, cannot finish early");
-            }
-        }
-
-        public int getFinishHeight() {
-            return finishHeight;
-        }
-
-        public long getQuorum() {
-            return params.getQuorum();
-        }
-
-        public long[] getWhitelist() {
-            return params.getWhitelist();
-        }
-
-        public VoteWeighting getVoteWeighting() {
-            return params.getVoteWeighting();
-        }
-
-        public byte[][] getLinkedFullHashes() {
-            return linkedFullHashes;
-        }
-
-        public byte[] getHashedSecret() {
-            return hashedSecret;
-        }
-
-        public byte getAlgorithm() {
-            return algorithm;
-        }
-
-        public PhasingParams getParams() {
-            return params;
-        }
     }
 }

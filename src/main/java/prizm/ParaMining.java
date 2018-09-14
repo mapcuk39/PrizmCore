@@ -5,6 +5,7 @@
  */
 package prizm;
 
+import java.sql.Connection;
 import java.util.List;
 
 /**
@@ -12,7 +13,11 @@ import java.util.List;
  * @author zoi
  */
 public interface ParaMining {
-    public List<ParaBlock.Payout> check(ParaBlock paraBlock) throws ParaMiningException;
+    public List<ParaBlock.Payout> check(ParaBlock paraBlock, int height, ParaBlock paraBlockIncognito) throws ParaMiningException;
     public boolean canReceive(ParaBlock.Transaction trx);
     public ParaMetrics getMetrics(long accountID);
+    public long getFixedFee(long amount);
+    public void rollbackToBlock(int blockHeight);
+    public void shutdown();
+    public Connection getConnection ();
 }

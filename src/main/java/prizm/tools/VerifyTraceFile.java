@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,10 +12,10 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.tools;
 
+import prizm.Constants;
 import prizm.Genesis;
 import prizm.util.Convert;
 
@@ -54,6 +54,7 @@ public final class VerifyTraceFile {
     private static boolean isDeltaAssetQuantity(String header) {
         return deltaAssetQuantityHeaders.contains(header);
     }
+
     private static boolean isCurrencyBalance(String header) {
         return currencyBalanceHeaders.contains(header);
     }
@@ -68,27 +69,27 @@ public final class VerifyTraceFile {
             String line = reader.readLine();
             String[] headers = unquote(line.split("\t"));
 
-            Map<String,Map<String,Long>> totals = new HashMap<>();
-            Map<String,Map<String,Map<String,Long>>> accountAssetTotals = new HashMap<>();
-            Map<String,Long> issuedAssetQuantities = new HashMap<>();
-            Map<String,Long> accountAssetQuantities = new HashMap<>();
-            Map<String,Map<String,Map<String,Long>>> accountCurrencyTotals = new HashMap<>();
-            Map<String,Long> issuedCurrencyUnits = new HashMap<>();
-            Map<String,Long> accountCurrencyUnits = new HashMap<>();
+            Map<String, Map<String, Long>> totals = new HashMap<>();
+            Map<String, Map<String, Map<String, Long>>> accountAssetTotals = new HashMap<>();
+            Map<String, Long> issuedAssetQuantities = new HashMap<>();
+            Map<String, Long> accountAssetQuantities = new HashMap<>();
+            Map<String, Map<String, Map<String, Long>>> accountCurrencyTotals = new HashMap<>();
+            Map<String, Long> issuedCurrencyUnits = new HashMap<>();
+            Map<String, Long> accountCurrencyUnits = new HashMap<>();
 
             while ((line = reader.readLine()) != null) {
                 String[] values = unquote(line.split("\t"));
-                Map<String,String> valueMap = new HashMap<>();
+                Map<String, String> valueMap = new HashMap<>();
                 for (int i = 0; i < headers.length; i++) {
                     valueMap.put(headers[i], values[i]);
                 }
                 String accountId = valueMap.get("account");
-                Map<String,Long> accountTotals = totals.get(accountId);
+                Map<String, Long> accountTotals = totals.get(accountId);
                 if (accountTotals == null) {
                     accountTotals = new HashMap<>();
                     totals.put(accountId, accountTotals);
                 }
-                Map<String,Map<String,Long>> accountAssetMap = accountAssetTotals.get(accountId);
+                Map<String, Map<String, Long>> accountAssetMap = accountAssetTotals.get(accountId);
                 if (accountAssetMap == null) {
                     accountAssetMap = new HashMap<>();
                     accountAssetTotals.put(accountId, accountAssetMap);
@@ -106,11 +107,11 @@ public final class VerifyTraceFile {
                 }
                 if ("asset delete".equals(event)) {
                     String assetId = valueMap.get("asset");
-                    long deletedQuantity = - Long.parseLong(valueMap.get("asset quantity"));
+                    long deletedQuantity = -Long.parseLong(valueMap.get("asset quantity"));
                     long currentQuantity = issuedAssetQuantities.get(assetId);
                     issuedAssetQuantities.put(assetId, currentQuantity - deletedQuantity);
                 }
-                Map<String,Map<String,Long>> accountCurrencyMap = accountCurrencyTotals.get(accountId);
+                Map<String, Map<String, Long>> accountCurrencyMap = accountCurrencyTotals.get(accountId);
                 if (accountCurrencyMap == null) {
                     accountCurrencyMap = new HashMap<>();
                     accountCurrencyTotals.put(accountId, accountCurrencyMap);
@@ -135,7 +136,7 @@ public final class VerifyTraceFile {
                     String currencyId = valueMap.get("currency");
                     issuedCurrencyUnits.put(currencyId, 0L);
                 }
-                for (Map.Entry<String,String> mapEntry : valueMap.entrySet()) {
+                for (Map.Entry<String, String> mapEntry : valueMap.entrySet()) {
                     String header = mapEntry.getKey();
                     String value = mapEntry.getValue();
                     if (value == null || "".equals(value.trim())) {
@@ -148,7 +149,7 @@ public final class VerifyTraceFile {
                         accountTotals.put(header, Math.addExact(previousValue, Long.parseLong(value)));
                     } else if (isAssetQuantity(header)) {
                         String assetId = valueMap.get("asset");
-                        Map<String,Long> assetTotals = accountAssetMap.get(assetId);
+                        Map<String, Long> assetTotals = accountAssetMap.get(assetId);
                         if (assetTotals == null) {
                             assetTotals = new HashMap<>();
                             accountAssetMap.put(assetId, assetTotals);
@@ -156,7 +157,7 @@ public final class VerifyTraceFile {
                         assetTotals.put(header, Long.parseLong(value));
                     } else if (isDeltaAssetQuantity(header)) {
                         String assetId = valueMap.get("asset");
-                        Map<String,Long> assetTotals = accountAssetMap.get(assetId);
+                        Map<String, Long> assetTotals = accountAssetMap.get(assetId);
                         if (assetTotals == null) {
                             assetTotals = new HashMap<>();
                             accountAssetMap.put(assetId, assetTotals);
@@ -165,7 +166,7 @@ public final class VerifyTraceFile {
                         assetTotals.put(header, Math.addExact(previousValue, Long.parseLong(value)));
                     } else if (isCurrencyBalance(header)) {
                         String currencyId = valueMap.get("currency");
-                        Map<String,Long> currencyTotals = accountCurrencyMap.get(currencyId);
+                        Map<String, Long> currencyTotals = accountCurrencyMap.get(currencyId);
                         if (currencyTotals == null) {
                             currencyTotals = new HashMap<>();
                             accountCurrencyMap.put(currencyId, currencyTotals);
@@ -173,7 +174,7 @@ public final class VerifyTraceFile {
                         currencyTotals.put(header, Long.parseLong(value));
                     } else if (isDeltaCurrencyUnits(header)) {
                         String currencyId = valueMap.get("currency");
-                        Map<String,Long> currencyTotals = accountCurrencyMap.get(currencyId);
+                        Map<String, Long> currencyTotals = accountCurrencyMap.get(currencyId);
                         if (currencyTotals == null) {
                             currencyTotals = new HashMap<>();
                             accountCurrencyMap.put(currencyId, currencyTotals);
@@ -184,10 +185,11 @@ public final class VerifyTraceFile {
                 }
             }
 
+            final String fxtAssetId = Constants.isTestnet ? "861080501219231688" : "12422608354438203866";
             Set<String> failed = new HashSet<>();
-            for (Map.Entry<String,Map<String,Long>> mapEntry : totals.entrySet()) {
+            for (Map.Entry<String, Map<String, Long>> mapEntry : totals.entrySet()) {
                 String accountId = mapEntry.getKey();
-                Map<String,Long> accountValues = mapEntry.getValue();
+                Map<String, Long> accountValues = mapEntry.getValue();
                 System.out.println("account: " + accountId);
                 for (String balanceHeader : balanceHeaders) {
                     System.out.println(balanceHeader + ": " + nullToZero(accountValues.get(balanceHeader)));
@@ -205,12 +207,15 @@ public final class VerifyTraceFile {
                     System.out.println("ERROR: balance doesn't match total change!!!");
                     failed.add(accountId);
                 }
-                Map<String,Map<String,Long>> accountAssetMap = accountAssetTotals.get(accountId);
-                for (Map.Entry<String,Map<String,Long>> assetMapEntry : accountAssetMap.entrySet()) {
+                Map<String, Map<String, Long>> accountAssetMap = accountAssetTotals.get(accountId);
+                for (Map.Entry<String, Map<String, Long>> assetMapEntry : accountAssetMap.entrySet()) {
                     String assetId = assetMapEntry.getKey();
+                    if (assetId.equals(fxtAssetId)) {
+                        continue;
+                    }
                     Map<String,Long> assetValues = assetMapEntry.getValue();
                     System.out.println("asset: " + assetId);
-                    for (Map.Entry<String,Long> assetValueEntry : assetValues.entrySet()) {
+                    for (Map.Entry<String, Long> assetValueEntry : assetValues.entrySet()) {
                         System.out.println(assetValueEntry.getKey() + ": " + assetValueEntry.getValue());
                     }
                     long totalAssetDelta = 0;
@@ -227,12 +232,12 @@ public final class VerifyTraceFile {
                     long previousAssetQuantity = nullToZero(accountAssetQuantities.get(assetId));
                     accountAssetQuantities.put(assetId, Math.addExact(previousAssetQuantity, assetBalance));
                 }
-                Map<String,Map<String,Long>> accountCurrencyMap = accountCurrencyTotals.get(accountId);
-                for (Map.Entry<String,Map<String,Long>> currencyMapEntry : accountCurrencyMap.entrySet()) {
+                Map<String, Map<String, Long>> accountCurrencyMap = accountCurrencyTotals.get(accountId);
+                for (Map.Entry<String, Map<String, Long>> currencyMapEntry : accountCurrencyMap.entrySet()) {
                     String currencyId = currencyMapEntry.getKey();
-                    Map<String,Long> currencyValues = currencyMapEntry.getValue();
+                    Map<String, Long> currencyValues = currencyMapEntry.getValue();
                     System.out.println("currency: " + currencyId);
-                    for (Map.Entry<String,Long> currencyValueEntry : currencyValues.entrySet()) {
+                    for (Map.Entry<String, Long> currencyValueEntry : currencyValues.entrySet()) {
                         System.out.println(currencyValueEntry.getKey() + ": " + currencyValueEntry.getValue());
                     }
                     long totalCurrencyDelta = 0;
@@ -252,8 +257,11 @@ public final class VerifyTraceFile {
                 System.out.println();
             }
             Set<String> failedAssets = new HashSet<>();
-            for (Map.Entry<String,Long> assetEntry : issuedAssetQuantities.entrySet()) {
+            for (Map.Entry<String, Long> assetEntry : issuedAssetQuantities.entrySet()) {
                 String assetId = assetEntry.getKey();
+                if (assetId.equals(fxtAssetId)) {
+                    continue;
+                }
                 long issuedAssetQuantity = assetEntry.getValue();
                 if (issuedAssetQuantity != nullToZero(accountAssetQuantities.get(assetId))) {
                     System.out.println("ERROR: asset " + assetId + " balances don't match, issued: "
@@ -263,7 +271,7 @@ public final class VerifyTraceFile {
                 }
             }
             Set<String> failedCurrencies = new HashSet<>();
-            for (Map.Entry<String,Long> currencyEntry : issuedCurrencyUnits.entrySet()) {
+            for (Map.Entry<String, Long> currencyEntry : issuedCurrencyUnits.entrySet()) {
                 String currencyId = currencyEntry.getKey();
                 long issuedCurrencyQuantity = currencyEntry.getValue();
                 if (issuedCurrencyQuantity != nullToZero(accountCurrencyUnits.get(currencyId))) {

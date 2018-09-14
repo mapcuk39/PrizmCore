@@ -16,11 +16,13 @@
 
 package prizm;
 
+import prizm.crypto.Crypto;
 import prizm.crypto.EncryptedData;
 import prizm.db.DbIterator;
 import prizm.db.DbKey;
 import prizm.db.DbUtils;
 import prizm.db.PrunableDbTable;
+import prizm.util.Convert;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -231,6 +233,26 @@ public final class PrunableMessage {
 
     public int getHeight() {
         return height;
+    }
+
+    public byte[] decrypt(String secretPhrase) {
+        if (encryptedData == null) {
+            return null;
+        }
+        byte[] publicKey = senderId == Account.getId(Crypto.getPublicKey(secretPhrase))
+                ? Account.getPublicKey(recipientId) : Account.getPublicKey(senderId);
+        return Account.decryptFrom(publicKey, encryptedData, secretPhrase, isCompressed);
+    }
+
+    public byte[] decrypt(byte[] sharedKey) {
+        if (encryptedData == null) {
+            return null;
+        }
+        byte[] data = Crypto.aesDecrypt(encryptedData.getData(), sharedKey);
+        if (isCompressed) {
+            data = Convert.uncompress(data);
+        }
+        return data;
     }
 
     static void add(TransactionImpl transaction, Appendix.PrunablePlainMessage appendix) {

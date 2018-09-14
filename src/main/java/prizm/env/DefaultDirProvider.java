@@ -50,4 +50,9 @@ public class DefaultDirProvider implements DirProvider {
         return Paths.get(".").toAbsolutePath().getParent().toString();
     }
 
+    @Override
+    public boolean startNativeModule(String moduleName, String arguments) {
+        return false;
+    }
+
 }

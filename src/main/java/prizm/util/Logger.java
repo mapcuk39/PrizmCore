@@ -1,4 +1,4 @@
-/******************************************************************************
+/** ****************************************************************************
  * Copyright © 2013-2016 The Nxt Core Developers.                             *
  *                                                                            *
  * See the AUTHORS.txt, DEVELOPER-AGREEMENT.txt and LICENSE.txt files at      *
@@ -12,8 +12,7 @@
  *                                                                            *
  * Removal or modification of this copyright notice is prohibited.            *
  *                                                                            *
- ******************************************************************************/
-
+ ***************************************************************************** */
 package prizm.util;
 
 import prizm.Prizm;
@@ -29,37 +28,60 @@ import java.util.logging.LogManager;
  */
 public final class Logger {
 
-    /** Log event types */
+    /**
+     * Log event types
+     */
     public enum Event {
         MESSAGE, EXCEPTION
     }
 
-    /** Log levels */
+    /**
+     * Log levels
+     */
     public enum Level {
         DEBUG, INFO, WARN, ERROR
     }
 
-    /** Message listeners */
+    /**
+     * Message listeners
+     */
     private static final Listeners<String, Event> messageListeners = new Listeners<>();
 
-    /** Exception listeners */
+    /**
+     * Exception listeners
+     */
     private static final Listeners<Throwable, Event> exceptionListeners = new Listeners<>();
 
-    /** Our logger instance */
+    /**
+     * Our logger instance
+     */
     private static final org.slf4j.Logger log;
 
-    /** Enable stack traces */
+    /**
+     * Enable stack traces
+     */
     private static final boolean enableStackTraces;
 
-    /** Enable log traceback */
+    /**
+     * Enable log traceback
+     */
     private static final boolean enableLogTraceback;
 
     /**
      * No constructor
      */
-    private Logger() {}
+    private Logger() {
+    }
 
-    
+    /**
+     * Logger initialization
+     *
+     * The existing Java logging configuration will be used if the Java logger has already
+     * been initialized.  Otherwise, we will configure our own log manager and log handlers.
+     * The prizm/conf/logging-default.properties and prizm/conf/logging.properties configuration
+     * files will be used.  Entries in logging.properties will override entries in
+     * logging-default.properties.
+     */
     static {
         String oldManager = System.getProperty("java.util.logging.manager");
         System.setProperty("java.util.logging.manager", "prizm.util.PrizmLogManager");
@@ -67,7 +89,7 @@ public final class Logger {
             System.setProperty("java.util.logging.manager",
                     (oldManager != null ? oldManager : "java.util.logging.LogManager"));
         }
-        if (! Boolean.getBoolean("prizm.doNotConfigureLogging")) {
+        if (!Boolean.getBoolean("prizm.doNotConfigureLogging")) {
             try {
                 Properties loggingProperties = new Properties();
                 Prizm.loadProperties(loggingProperties, "logging-default.properties", true);
@@ -95,7 +117,8 @@ public final class Logger {
     /**
      * Logger initialization
      */
-    public static void init() {}
+    public static void init() {
+    }
 
     /**
      * Logger shutdown
@@ -109,7 +132,7 @@ public final class Logger {
     /**
      * Set the log level
      *
-     * @param       level               Desired log level
+     * @param level Desired log level
      */
     public static void setLevel(Level level) {
         java.util.logging.Logger jdkLogger = java.util.logging.Logger.getLogger(log.getName());
@@ -132,9 +155,9 @@ public final class Logger {
     /**
      * Add a message listener
      *
-     * @param       listener            Listener
-     * @param       eventType           Notification event type
-     * @return                          TRUE if listener added
+     * @param listener Listener
+     * @param eventType Notification event type
+     * @return TRUE if listener added
      */
     public static boolean addMessageListener(Listener<String> listener, Event eventType) {
         return messageListeners.addListener(listener, eventType);
@@ -143,9 +166,9 @@ public final class Logger {
     /**
      * Add an exception listener
      *
-     * @param       listener            Listener
-     * @param       eventType           Notification event type
-     * @return                          TRUE if listener added
+     * @param listener Listener
+     * @param eventType Notification event type
+     * @return TRUE if listener added
      */
     public static boolean addExceptionListener(Listener<Throwable> listener, Event eventType) {
         return exceptionListeners.addListener(listener, eventType);
@@ -154,9 +177,9 @@ public final class Logger {
     /**
      * Remove a message listener
      *
-     * @param       listener            Listener
-     * @param       eventType           Notification event type
-     * @return                          TRUE if listener removed
+     * @param listener Listener
+     * @param eventType Notification event type
+     * @return TRUE if listener removed
      */
     public static boolean removeMessageListener(Listener<String> listener, Event eventType) {
         return messageListeners.removeListener(listener, eventType);
@@ -165,9 +188,9 @@ public final class Logger {
     /**
      * Remove an exception listener
      *
-     * @param       listener            Listener
-     * @param       eventType           Notification event type
-     * @return                          TRUE if listener removed
+     * @param listener Listener
+     * @param eventType Notification event type
+     * @return TRUE if listener removed
      */
     public static boolean removeExceptionListener(Listener<Throwable> listener, Event eventType) {
         return exceptionListeners.removeListener(listener, eventType);
@@ -176,7 +199,7 @@ public final class Logger {
     /**
      * Log a message (map to INFO)
      *
-     * @param       message             Message
+     * @param message Message
      */
     public static void logMessage(String message) {
         doLog(Level.INFO, message, null);
@@ -185,8 +208,8 @@ public final class Logger {
     /**
      * Log an exception (map to ERROR)
      *
-     * @param       message             Message
-     * @param       exc                 Exception
+     * @param message Message
+     * @param exc Exception
      */
     public static void logMessage(String message, Exception exc) {
         doLog(Level.ERROR, message, exc);
@@ -216,7 +239,7 @@ public final class Logger {
     /**
      * Log an ERROR message
      *
-     * @param       message             Message
+     * @param message Message
      */
     public static void logErrorMessage(String message) {
         doLog(Level.ERROR, message, null);
@@ -225,8 +248,8 @@ public final class Logger {
     /**
      * Log an ERROR exception
      *
-     * @param       message             Message
-     * @param       exc                 Exception
+     * @param message Message
+     * @param exc Exception
      */
     public static void logErrorMessage(String message, Throwable exc) {
         doLog(Level.ERROR, message, exc);
@@ -239,7 +262,7 @@ public final class Logger {
     /**
      * Log a WARNING message
      *
-     * @param       message             Message
+     * @param message Message
      */
     public static void logWarningMessage(String message) {
         doLog(Level.WARN, message, null);
@@ -248,8 +271,8 @@ public final class Logger {
     /**
      * Log a WARNING exception
      *
-     * @param       message             Message
-     * @param       exc                 Exception
+     * @param message Message
+     * @param exc Exception
      */
     public static void logWarningMessage(String message, Throwable exc) {
         doLog(Level.WARN, message, exc);
@@ -262,7 +285,7 @@ public final class Logger {
     /**
      * Log an INFO message
      *
-     * @param       message             Message
+     * @param message Message
      */
     public static void logInfoMessage(String message) {
         doLog(Level.INFO, message, null);
@@ -271,18 +294,18 @@ public final class Logger {
     /**
      * Log an INFO message
      *
-     * @param       format             Message format
-     * @param       args               Message args
+     * @param format Message format
+     * @param args Message args
      */
-    public static void logInfoMessage(String format, Object ... args) {
+    public static void logInfoMessage(String format, Object... args) {
         doLog(Level.INFO, String.format(format, args), null);
     }
 
     /**
      * Log an INFO exception
      *
-     * @param       message             Message
-     * @param       exc                 Exception
+     * @param message Message
+     * @param exc Exception
      */
     public static void logInfoMessage(String message, Throwable exc) {
         doLog(Level.INFO, message, exc);
@@ -295,7 +318,7 @@ public final class Logger {
     /**
      * Log a debug message
      *
-     * @param       message             Message
+     * @param message Message
      */
     public static void logDebugMessage(String message) {
         doLog(Level.DEBUG, message, null);
@@ -304,18 +327,18 @@ public final class Logger {
     /**
      * Log a debug message
      *
-     * @param       format             Message format
-     * @param       args               Message args
+     * @param format Message format
+     * @param args Message args
      */
-    public static void logDebugMessage(String format, Object ... args) {
+    public static void logDebugMessage(String format, Object... args) {
         doLog(Level.DEBUG, String.format(format, args), null);
     }
 
     /**
      * Log a debug exception
      *
-     * @param       message             Message
-     * @param       exc                 Exception
+     * @param message Message
+     * @param exc Exception
      */
     public static void logDebugMessage(String message, Throwable exc) {
         doLog(Level.DEBUG, message, exc);
@@ -324,9 +347,9 @@ public final class Logger {
     /**
      * Log the event
      *
-     * @param       level               Level
-     * @param       message             Message
-     * @param       exc                 Exception
+     * @param level Level
+     * @param message Message
+     * @param exc Exception
      */
     private static void doLog(Level level, String message, Throwable exc) {
         String logMessage = message;

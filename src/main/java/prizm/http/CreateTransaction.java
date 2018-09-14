@@ -22,7 +22,6 @@ import prizm.Attachment;
 import prizm.Constants;
 import prizm.Prizm;
 import prizm.PrizmException;
-import prizm.PhasingParams;
 import prizm.Transaction;
 import prizm.crypto.Crypto;
 import prizm.util.Convert;
@@ -34,7 +33,7 @@ import java.util.Arrays;
 
 import static prizm.http.JSONResponses.FEATURE_NOT_AVAILABLE;
 import static prizm.http.JSONResponses.INCORRECT_DEADLINE;
-import static prizm.http.JSONResponses.INCORRECT_LINKED_FULL_HASH;
+import static prizm.http.JSONResponses.INCORRECT_EC_BLOCK;
 import static prizm.http.JSONResponses.INCORRECT_WHITELIST;
 import static prizm.http.JSONResponses.MISSING_DEADLINE;
 import static prizm.http.JSONResponses.MISSING_SECRET_PHRASE;
@@ -51,7 +50,7 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
             "phasingWhitelisted", "phasingWhitelisted", "phasingWhitelisted",
             "phasingLinkedFullHash", "phasingLinkedFullHash", "phasingLinkedFullHash",
             "phasingHashedSecret", "phasingHashedSecretAlgorithm",
-            "recipientPublicKey"};
+            "recipientPublicKey", "ecBlockId", "ecBlockHeight"};
 
     private static String[] addCommonParameters(String[] parameters) {
         String[] result = Arrays.copyOf(parameters, parameters.length + commonParameters.length);
@@ -81,52 +80,6 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
     final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, long recipientId, long amountNQT)
             throws PrizmException {
         return createTransaction(req, senderAccount, recipientId, amountNQT, Attachment.ORDINARY_PAYMENT);
-    }
-
-    private Appendix.Phasing parsePhasing(HttpServletRequest req) throws ParameterException {
-        int finishHeight = ParameterParser.getInt(req, "phasingFinishHeight",
-                Prizm.getBlockchain().getHeight() + 1,
-                Prizm.getBlockchain().getHeight() + Constants.MAX_PHASING_DURATION + 1,
-                true);
-        
-        PhasingParams phasingParams = parsePhasingParams(req, "phasing");
-        
-        byte[][] linkedFullHashes = null;
-        String[] linkedFullHashesValues = req.getParameterValues("phasingLinkedFullHash");
-        if (linkedFullHashesValues != null && linkedFullHashesValues.length > 0) {
-            linkedFullHashes = new byte[linkedFullHashesValues.length][];
-            for (int i = 0; i < linkedFullHashes.length; i++) {
-                linkedFullHashes[i] = Convert.parseHexString(linkedFullHashesValues[i]);
-                if (Convert.emptyToNull(linkedFullHashes[i]) == null || linkedFullHashes[i].length != 32) {
-                    throw new ParameterException(INCORRECT_LINKED_FULL_HASH);
-                }
-            }
-        }
-
-        byte[] hashedSecret = Convert.parseHexString(Convert.emptyToNull(req.getParameter("phasingHashedSecret")));
-        byte algorithm = ParameterParser.getByte(req, "phasingHashedSecretAlgorithm", (byte) 0, Byte.MAX_VALUE, false);
-
-        return new Appendix.Phasing(finishHeight, phasingParams, linkedFullHashes, hashedSecret, algorithm);
-    }
-
-    final PhasingParams parsePhasingParams(HttpServletRequest req, String parameterPrefix) throws ParameterException {
-        byte votingModel = ParameterParser.getByte(req, parameterPrefix + "VotingModel", (byte)-1, (byte)5, true);
-        long quorum = ParameterParser.getLong(req, parameterPrefix + "Quorum", 0, Long.MAX_VALUE, false);
-        long minBalance = ParameterParser.getLong(req, parameterPrefix + "MinBalance", 0, Long.MAX_VALUE, false);
-        byte minBalanceModel = ParameterParser.getByte(req, parameterPrefix + "MinBalanceModel", (byte)0, (byte)3, false);
-        long holdingId = ParameterParser.getUnsignedLong(req, parameterPrefix + "Holding", false);
-        long[] whitelist = null;
-        String[] whitelistValues = req.getParameterValues(parameterPrefix + "Whitelisted");
-        if (whitelistValues != null && whitelistValues.length > 0) {
-            whitelist = new long[whitelistValues.length];
-            for (int i = 0; i < whitelistValues.length; i++) {
-                whitelist[i] = Convert.parseAccountId(whitelistValues[i]);
-                if (whitelist[i] == 0) {
-                    throw new ParameterException(INCORRECT_WHITELIST);
-                }
-            }
-        }
-        return new PhasingParams(votingModel, holdingId, quorum, minBalance, minBalanceModel, whitelist);
     }
 
     final JSONStreamAware createTransaction(HttpServletRequest req, Account senderAccount, long recipientId,
@@ -160,12 +113,6 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
             publicKeyAnnouncement = new Appendix.PublicKeyAnnouncement(Convert.parseHexString(recipientPublicKey));
         }
 
-        Appendix.Phasing phasing = null;
-        boolean phased = "true".equalsIgnoreCase(req.getParameter("phased"));
-        if (phased) {
-            phasing = parsePhasing(req);
-        }
-
         if (secretPhrase == null && publicKeyValue == null) {
             return MISSING_SECRET_PHRASE;
         } else if (deadlineValue == null) {
@@ -182,7 +129,16 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
             return INCORRECT_DEADLINE;
         }
 
-        long feeNQT = ParameterParser.getFeeNQT(req);
+/////ssss        long feeNQT = ParameterParser.getFeeNQT(req);
+        long feeNQT = Prizm.para().getFixedFee(amountNQT);
+        int ecBlockHeight = ParameterParser.getInt(req, "ecBlockHeight", 0, Integer.MAX_VALUE, false);
+        long ecBlockId = ParameterParser.getUnsignedLong(req, "ecBlockId", false);
+        if (ecBlockId != 0 && ecBlockId != Prizm.getBlockchain().getBlockIdAtHeight(ecBlockHeight)) {
+            return INCORRECT_EC_BLOCK;
+        }
+        if (ecBlockId == 0 && ecBlockHeight > 0) {
+            ecBlockId = Prizm.getBlockchain().getBlockIdAtHeight(ecBlockHeight);
+        }
 
         JSONObject response = new JSONObject();
 
@@ -199,9 +155,12 @@ abstract class CreateTransaction extends APIServlet.APIRequestHandler {
             builder.appendix(message);
             builder.appendix(publicKeyAnnouncement);
             builder.appendix(encryptToSelfMessage);
-            builder.appendix(phasing);
             builder.appendix(prunablePlainMessage);
             builder.appendix(prunableEncryptedMessage);
+            if (ecBlockId != 0) {
+                builder.ecBlockId(ecBlockId);
+                builder.ecBlockHeight(ecBlockHeight);
+            }
             Transaction transaction = builder.build(secretPhrase);
             try {
                 if (Math.addExact(amountNQT, transaction.getFeeNQT()) > senderAccount.getUnconfirmedBalanceNQT()) {

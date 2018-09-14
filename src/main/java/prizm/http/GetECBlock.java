@@ -17,8 +17,6 @@
 package prizm.http;
 
 import prizm.Block;
-import prizm.Constants;
-import prizm.EconomicClustering;
 import prizm.Prizm;
 import prizm.PrizmException;
 import org.json.simple.JSONObject;
@@ -40,10 +38,7 @@ public final class GetECBlock extends APIServlet.APIRequestHandler {
         if (timestamp == 0) {
             timestamp = Prizm.getEpochTime();
         }
-        if (timestamp < Prizm.getBlockchain().getLastBlock().getTimestamp() - Constants.MAX_TIMEDRIFT) {
-            return JSONResponses.INCORRECT_TIMESTAMP;
-        }
-        Block ecBlock = EconomicClustering.getECBlock(timestamp);
+        Block ecBlock = Prizm.getBlockchain().getECBlock(timestamp);
         JSONObject response = new JSONObject();
         response.put("ecBlockId", ecBlock.getStringId());
         response.put("ecBlockHeight", ecBlock.getHeight());

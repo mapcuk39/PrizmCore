@@ -5,12 +5,8 @@
  */
 package prizm;
 
-/**
- *
- * @author zoi
- */
 public class Conc {
-    private static String LEFT_LINE = "update para set amount=amount+? where id in (";
+    private String LEFT_LINE = "update para set amount=amount+? where id in (";
     private String IDs = "";
     private int cointer=0;
     
@@ -25,5 +21,15 @@ public class Conc {
 
     public String query() {
         return LEFT_LINE+IDs+");";
+    }
+
+    public Conc() {
+    }
+    
+    public Conc(boolean is1440) {
+        this();
+        if (is1440) {
+            LEFT_LINE = "update para_1440 set amount=amount+? where id in (";
+        }
     }
 }

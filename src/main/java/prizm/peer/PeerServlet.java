@@ -17,6 +17,7 @@
 package prizm.peer;
 
 import prizm.BlockchainProcessor;
+import prizm.Constants;
 import prizm.Prizm;
 import prizm.util.CountingInputReader;
 import prizm.util.CountingOutputWriter;
@@ -109,6 +110,13 @@ public final class PeerServlet extends WebSocketServlet {
         JSONObject response = new JSONObject();
         response.put("error", Errors.DOWNLOADING);
         DOWNLOADING = JSON.prepare(response);
+    }
+
+    private static final JSONStreamAware LIGHT_CLIENT;
+    static {
+        JSONObject response = new JSONObject();
+        response.put("error", Errors.LIGHT_CLIENT);
+        LIGHT_CLIENT = JSON.prepare(response);
     }
 
     private static final BlockchainProcessor blockchainProcessor = Prizm.getBlockchainProcessor();
@@ -271,8 +279,13 @@ public final class PeerServlet extends WebSocketServlet {
                 Peers.notifyListeners(peer, Peers.Event.ADD_INBOUND);
             }
             peer.setLastInboundRequest(Prizm.getEpochTime());
-            if (peerRequestHandler.rejectWhileDownloading() && blockchainProcessor.isDownloading()) {
-                return DOWNLOADING;
+            if (peerRequestHandler.rejectWhileDownloading()) {
+                if (blockchainProcessor.isDownloading()) {
+                    return DOWNLOADING;
+                }
+                if (Constants.isLightClient) {
+                    return LIGHT_CLIENT;
+                }
             }
             return peerRequestHandler.processRequest(request, peer);
         } catch (RuntimeException|ParseException|IOException e) {
