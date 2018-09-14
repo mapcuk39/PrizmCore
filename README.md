@@ -16,6 +16,6 @@
 
 ## Blockchain explorer [BlockChain.PRIZM.SPACE](http://blockchain.prizm.space/)
 
-## PRIZM Whitepaper ([en](http://tech.prizm.space/wp/prizm_wp_en.pdf), [ru](http://tech.prizm.space/wp/prizm_wp_ru.pdf).
+## PRIZM Whitepaper ([en](http://tech.prizm.space/wp/prizm_wp_en.pdf), [ru](http://tech.prizm.space/wp/prizm_wp_ru.pdf), [de](http://tech.prizm.space/wp/prizm_wp_de.pdf), [es](http://tech.prizm.space/wp/prizm_wp_es.pdf))
 
 Attention! We don't include PrizmEngine.java in current repository for security reasons and for preventing creating forks by anyone. This file will be published later.
