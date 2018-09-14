@@ -18,4 +18,6 @@
 
 ## PRIZM Whitepaper ([en](http://tech.prizm.space/wp/prizm_wp_en.pdf), [ru](http://tech.prizm.space/wp/prizm_wp_ru.pdf), [de](http://tech.prizm.space/wp/prizm_wp_de.pdf), [es](http://tech.prizm.space/wp/prizm_wp_es.pdf))
 
+## PrizmCore wallet download ([Windows](http://tech.prizm.space/files/prizm-dist-1.9.17-win.exe), [OS/X](http://tech.prizm.space/files/prizm-dist-1.9.17-osx.dmg), [Linux](http://tech.prizm.space/files/prizm-dist-1.9.17-linux.tgz)) 
+
 Attention! We don't include PrizmEngine.java in current repository for security reasons and for preventing creating forks by anyone. This file will be published later.
