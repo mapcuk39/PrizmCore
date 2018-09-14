@@ -4,7 +4,7 @@
 
 ## PrizmCore wallet download (v.1.9.17: [Windows](http://tech.prizm.space/files/prizm-dist-1.9.17-win.exe), [OS/X](http://tech.prizm.space/files/prizm-dist-1.9.17-osx.dmg), [Linux](http://tech.prizm.space/files/prizm-dist-1.9.17-linux.tgz))
 
-## This is [Android Application](http://tech.prizm-space.com/prizm.apk)
+## This is [Android Application](http://tech.prizm.space/files/prizm.apk)
 
 ## User friendly [Online Wallet](https://wallet.prizm.space/)
 
