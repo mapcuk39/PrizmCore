@@ -2,7 +2,7 @@
 
 ## PRIZM Whitepaper ([en](http://tech.prizm.space/wp/prizm_wp_en.pdf), [ru](http://tech.prizm.space/wp/prizm_wp_ru.pdf), [de](http://tech.prizm.space/wp/prizm_wp_de.pdf), [es](http://tech.prizm.space/wp/prizm_wp_es.pdf))
 
-## PrizmCore wallet download (v.1.9.19: [Windows](http://tech.prizm.space/files/prizm-dist-1.9.19-win.exe), [OS/X](http://tech.prizm.space/files/prizm-dist-1.9.19-mac.dmg), [Linux](http://tech.prizm.space/files/prizm-dist-1.9.19-linux.tgz))
+## PrizmCore wallet download (v.1.9.20: [Windows](http://tech.prizm.space/files/prizm-dist-1.9.20-win.exe), [OS/X](http://tech.prizm.space/files/prizm-dist-1.9.20-mac.dmg), [Linux](http://tech.prizm.space/files/prizm-dist-1.9.20-linux.tgz))
 
 ## This is [Android Application](http://tech.prizm.space/files/prizm.apk)
 
