@@ -10,7 +10,7 @@
 
 ## [Windows and OS X client downloads](http://94.130.167.158/loyalty/center/)
 
-## Easy API gateway (v.1.10.4) [PrizmAPIServlet](http://94.130.167.158/loyalty/center/prizm-api-1.10.4.tar.gz)
+## Easy API gateway (v.1.10.4) [PrizmAPIServlet](http://tech.prizm.space/files/prizm-api-1.10.4.tar.gz)
 
 ## Blockchain explorer [BlockChain.PRIZM.SPACE](http://blockchain.prizm.space/)
 
